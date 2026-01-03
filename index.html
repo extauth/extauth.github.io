@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="theme-color" content="#FFFFFF">
+  <meta charset="UTF-8">
+  <title>QR Authentication</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="frw/bootstrap.min.css">
+  <script src="frw/jquery.min.js"></script>
+  <script src="frw/bootstrap.bundle.min.js"></script>
+  <script src="frw/age.min.js"></script>
+  <script src="frw/qrcode.min.js"></script>
+  <script src="frw/qr-scanner.legacy.min.js"></script>
+  <script src="frw/totp.js"></script>
+  <script src="qrauth.js"></script>
+  <script>
+/*    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(registration => console.log('Service Worker Registered', registration))
+        .catch(error => console.error('Service Worker Registration Failed', error));
+    }*/
+  </script>
+</head>
+<body data-bs-theme="dark" style="width: 21em">
+<div id="mainContainer" class="container m-0 p-1">
+
+  <div class="progress mb-1" role="progressbar" aria-label="Session expiration time" style="height: 0.5em">
+    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0"></div>
+  </div>
+
+  <div id="cardArea" class="card">
+    <div class="card-body m-0 p-0 ms-1 me-1">
+      <label for="inpKeySource" class="form-label m-0 p-0">
+        <small style="font-size: x-small" class="ps-1">Sources takes from scanned qr code</small>
+      </label>
+      <br>
+      <div class="input-group input-group-sm" role="group">
+        <input id="inpKeySource" type="text" class="form-control ps-2 pe-2" placeholder="host/source/owner">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+        <ul id="selHstSrvSrc" class="dropdown-menu">
+          <li><a class="dropdown-item" href="#">1</a></li>
+          <li><a class="dropdown-item" href="#">2</a></li>
+        </ul>
+      </div>
+      <label for="inpCurrentPassword" class="form-label m-0 p-0 d-inline-block w-100">
+        <small style="font-size: x-small" class="ps-1">The current valid password key</small>
+      </label>
+      <br>
+      <div class="input-group input-group-sm">
+        <button class="btn btn-outline-secondary d-none" id="btnRevertPreviousPassword">&olarr;</button>
+        <input id="inpCurrentPassword" type="password" class="form-control"
+               aria-label="Enter the current password key"/>
+        <button class="btn btn-outline-secondary bg-black d-none" id="labelOTPcode" data-bs-target="#inpCurrentPassword"
+                style="color: #5aff00">123456</button>
+        <button class="btn btn-outline-secondary" id="btnShowCurrentPassword" data-bs-target="#inpCurrentPassword">&#x1F441;</button>
+      </div>
+      <label for="inpNewPassword" class="form-label mb-0">
+        <small style="font-size: x-small" class="ps-1">Change password to new</small>
+      </label>
+      <br>
+      <div class="input-group input-group-sm mb-3">
+        <button class="btn btn-outline-secondary" id="btnGenerateNewPassword">&#127920;</button>
+        <input id="inpNewPassword" type="password" class="form-control"
+               aria-label="Enter a new password key"/>
+        <button class="btn btn-outline-secondary" id="btnClearNewLuksSecret">&#10060;</button>
+        <button class="btn btn-outline-secondary" id="btnShowNewPassword" data-bs-target="#inpNewPassword">&#x1F441;</button>
+        <button class="btn btn-outline-secondary" id="btnSaveNewPassword">&#128190;</button>
+      </div>
+      <button id="btnScanSessionPubkey" type="button" class="btn btn-lg btn-secondary mb-3 pe-2 ps-2 ms-2" style="width: 6em;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi float-start" viewBox="0 0 16 16">
+          <path d="M0 .5A.5.5 0 0 1 .5 0h3a.5.5 0 0 1 0 1H1v2.5a.5.5 0 0 1-1 0zm12 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V1h-2.5a.5.5 0 0 1-.5-.5M.5 12a.5.5 0 0 1 .5.5V15h2.5a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1 0-1H15v-2.5a.5.5 0 0 1 .5-.5M4 4h1v1H4z"/>
+          <path d="M7 2H2v5h5zM3 3h3v3H3zm2 8H4v1h1z"/>
+          <path d="M7 9H2v5h5zm-4 1h3v3H3zm8-6h1v1h-1z"/>
+          <path d="M9 2h5v5H9zm1 1v3h3V3zM8 8v2h1v1H8v1h2v-2h1v2h1v-1h2v-1h-3V8zm2 2H9V9h1zm4 2h-1v1h-2v1h3zm-4 2v-1H8v1z"/>
+          <path d="M12 9h2V8h-2z"/>
+        </svg>
+      </button>
+      <small id="lblScanQrCode" style="font-size: x-small; position: absolute; width: 6em; left: 6.2em; margin-top: 0.8em; line-height: 1.1em">
+        make scan public key QR code...
+      </small>
+      <button id="btnShowQrCode" type="button" class="btn btn-lg btn-secondary mb-3 pe-2 ps-2 me-2 float-end bi-qr-code" style="width: 6em;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi float-end" viewBox="0 0 16 16">
+          <path d="M2 2h2v2H2z"/>
+          <path d="M6 0v6H0V0zM5 1H1v4h4zM4 12H2v2h2z"/>
+          <path d="M6 10v6H0v-6zm-5 1v4h4v-4zm11-9h2v2h-2z"/>
+          <path d="M10 0v6h6V0zm5 1v4h-4V1zM8 1V0h1v2H8v2H7V1zm0 5V4h1v2zM6 8V7h1V6h1v2h1V7h5v1h-4v1H7V8zm0 0v1H2V8H1v1H0V7h3v1zm10 1h-1V7h1zm-1 0h-1v2h2v-1h-1zm-4 0h2v1h-1v1h-1zm2 3v-1h-1v1h-1v1H9v1h3v-2zm0 0h3v1h-2v1h-1zm-4-1v1h1v-2H7v1z"/>
+          <path d="M7 12h1v3h4v1H7zm9 2v2h-3v-1h2v-1z"/>
+        </svg>
+      </button>
+      <small id="lblQrCreate" class="d-none" style="font-size: x-small; position: absolute; width: 6em; right: 6.2em; margin-top: 0.8em; line-height: 1.1em; text-align: right">
+        ...then start playing ~<b id="qrChunksQuantity">6</b><br>qr fragments</small>
+      <small id="lblQrShow" class="d-none" style="font-size: x-small; position: absolute; width: 6.2em; right: 6.2em; margin-top: 0.8em; line-height: 1.1em; text-align: right">
+        show TOTP QR code for the passkey</small>
+      <div class="float-end m-0 p-0">
+          <div class="col-1 m-0 p-0">
+            <button id="btnQrChunksPlus" class="btn btn-sm btn-secondary m-0 pb-0 pt-0 pe-1 ps-1" data-bs-target="+">&plus;</button>
+            <button id="btnQrChunksMinus" class="btn btn-sm btn-secondary m-0 pb-0 pt-0 pe-1 ps-1" data-bs-target="-">&minus;</button>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <video id="qrCodeScannerVideo" class="w-100 d-none p-3"></video>
+  <div id="qrCodeImgArea" class="bg-light m-0 pt-4 pb-4 d-none" style="padding-left: 20px"></div>
+
+  <div class="form-check form-switch mt-1 small float-sm-start">
+    <input class="form-check-input" type="checkbox" role="switch" id="switcherNetworkMode" disabled>
+    <label class="form-check-label small" for="switcherNetworkMode">Network mode</label>
+  </div>
+  <div class="input-group input-group-sm p-0 m-0 mt-1 w-auto float-end">
+    <input type="text" class="form-control p-0 m-0 ps-2 pe-2"
+           style="font-weight: lighter; font-size: x-small; width: 10em; text-align: end"
+           value="v.1.1.2 (20260103)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
+    <button class="btn btn-secondary p-0 m-0 ps-1 pe-1" type="button" style="height: 1.5em"
+            id="btnUpdateVersion">&#10227;</button>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+#!/bin/sh -e
+# location path:  /usr/share/initramfs-tools/hooks
+
+PREREQS=""
+
+prereqs() { echo "$PREREQS"; }
+
+case "$1" in
+    prereqs)
+    prereqs
+    exit 0
+    ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+
+#copy_exec /usr/bin/strace
+
+#copy_exec /usr/bin/realpath
+#copy_exec /usr/bin/head
+copy_exec /usr/bin/bc
+copy_exec /usr/bin/sha256sum
+copy_exec /usr/bin/keyctl
+copy_exec /usr/bin/inotifywait
+copy_exec /usr/bin/base64
+#copy_exec /usr/sbin/lvscan
+#copy_exec /usr/sbin/lvdisplay
+#copy_exec /usr/sbin/vgchange
+
+copy_exec /usr/bin/zbarimg
+copy_exec /usr/bin/qrencode
+copy_exec /usr/lib/x86_64-linux-gnu/ImageMagick-6.9.12/modules-Q16/coders/bmp.so
+copy_exec /usr/lib/x86_64-linux-gnu/ImageMagick-6.9.12/modules-Q16/coders/bmp.la
+copy_exec /usr/bin/ffmpeg
+copy_exec /usr/bin/age
+copy_exec /usr/bin/age-keygen
+copy_exec /etc/hostname
+copy_exec /usr/local/sbin/cryptkey-from-qrcode   /usr/local/sbin/cryptkey-from-qrcode
+
+
+exit 0
