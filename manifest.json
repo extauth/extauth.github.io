@@ -10,7 +10,8 @@
     {
       "src": "./favicon.svg",
       "sizes": "any",
-      "purpose": "maskable"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
