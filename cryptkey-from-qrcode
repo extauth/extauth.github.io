@@ -101,25 +101,49 @@ do
       kill -3 $ffpid >/dev/null
       ffpid=0
       TIMEOUT=0
-      KEYPRESSED="NO"
+#      KEYPRESSED="NO"
       NL="
 "
       NEWLUKSKEY=${LUKSKEY##*$NL}
       LUKSKEY=${LUKSKEY%$NL*}
 #      echo "   LUKSKEY: ==$LUKSKEY==">$TTY
 #      echo "NEWLUKSKEY: ==$NEWLUKSKEY==">$TTY
-      ISFAIL=`echo "$LUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE`
+      ISFAIL=`echo -n "$LUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE 2>&1`
       if [ -z "$ISFAIL" ]; then
         echo " ">$TTY
-        echo "LUKS key is valid, boot next...">$TTY
-        echo " ">$TTY
+        echo "LUKS key is valid, ">$TTY
+
         if [ "$LUKSKEY" != "$NEWLUKSKEY" ]; then
 #          ISFAIL=`echo "$NEWLUKSKEY" | cryptsetup luksChangeKey $CRYPTTAB_SOURCE --key-slot 0`
-          LUKSKEY=$NEWLUKSKEY
-          echo " ">$TTY
-          echo "LUKS key is changed, boot next...">$TTY
-          echo " ">$TTY
+          echo "try luksAddKey... ">$TTY
+          echo -ne "$LUKSKEY\n$NEWLUKSKEY" | cryptsetup luksAddKey $CRYPTTAB_SOURCE 2>&1 >$TTY
+          echo "now try to testing new key for $CRYPTTAB_SOURCE...">$TTY
+          ISFAIL=`echo -n "$NEWLUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE 2>&1`
+          if [ -z "$ISFAIL" ]; then
+            echo "try luksRemoveKey remove old keyslote... ">$TTY
+            echo -n "$LUKSKEY" | cryptsetup luksRemoveKey $CRYPTTAB_SOURCE 2>&1 >$TTY
+            echo "try reset all disk caches... ">$TTY
+	    sync >/dev/null
+	    blockdev --flushbufs $CRYPTTAB_SOURCE 2>&1 >$TTY
+	    blockdev --rereadpt $CRYPTTAB_SOURCE 2>&1 >$TTY
+	    echo 3 > /proc/sys/vm/drop_caches
+	    udevadm settle
+	    sleep 1 >/dev/null
+
+            echo " ">$TTY
+            echo "LUKS key is changed to NEW !!!!!!!!">$TTY
+            echo " ">$TTY
+            LUKSKEY=$NEWLUKSKEY
+          else
+            NEWLUKSKEY=$LUKSKEY
+            echo "### LUKS key is NOT changed ###" >$TTY
+            echo "### PRESS ENTER ### to continue booting..." >$TTY
+            read -r cont >/dev/null
+          fi
         fi
+        echo "...boot next...">$TTY
+        echo " ">$TTY
+
         OTPHEX=`echo -n "$LUKSKEY" | sha256sum | sed 's/ .*$//'`
 
         strbin=`for i in $(echo $OTPHEX | sed 's/../& /g'); do
@@ -175,12 +199,12 @@ do
 #  fi
 done
 
-if [ $ffpid -gt 0 ]; then
+if [ $ffpid -gt 0 ]>/dev/null; then
   kill -3 $ffpid >/dev/null
   sleep 1 >/dev/null
 fi
 
-if [ -z "$LUKSKEY" ]; then
+if [ -z "$LUKSKEY" ]>/dev/null; then
 #  exec /lib/cryptsetup/askpass "Try enter passphrase manually for $CRYPTTAB_NAME ($CRYPTTAB_SOURCE): "
   echo " ">$TTY
   echo "sorry, try booting next...">$TTY
@@ -190,7 +214,7 @@ else
 #  echo "$CRYPTTAB_SOURCE / $CRYPTTAB_NAME" >$TTY
 
 #  cryptsetup isLuks $CRYPTTAB_SOURCE >$TTY
-#  echo "$LUKSKEY" | cryptsetup luksOpen $CRYPTTAB_SOURCE $CRYPTTAB_NAME >$TTY
+#  echo -n "$LUKSKEY" | cryptsetup luksOpen $CRYPTTAB_SOURCE $CRYPTTAB_NAME >$TTY
 
 #  vgchange -ay >$TTY
 #  lvscan >$TTY

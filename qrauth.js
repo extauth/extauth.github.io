@@ -12,6 +12,7 @@ let objHSD = { // object description
     },
   }
 }
+let lsSelectedHSD = 'selectedHSD';
 let selectedHSD = undefined;
 
 function prepareControls() {
@@ -117,6 +118,8 @@ function prepareControls() {
     inpKeyDest.val(the);
     let arr = the.split('/');
     let obj = {hostName: arr[0], serviceName: arr[1], destName: arr[2]};
+    let dest = arr[0]+'/'+arr[1]+'/'+arr[2];
+    localStorage[lsSelectedHSD] = arr[0]+'_'+arr[1]+'_'+arr[2];
     selectedHSD = objHSD[obj.hostName][obj.serviceName][obj.destName];
     fillPasswordInputs(selectedHSD);
     lblQrShow.removeClass('d-none');
@@ -127,6 +130,13 @@ function prepareControls() {
     },250);
   }
   selHSD.find('a').click(passwordsFromSource);
+  if (localStorage[lsSelectedHSD])
+    setTimeout(function () {
+      let selectedHSD = selHSD.find('#'+localStorage[lsSelectedHSD]);
+      console.log(selectedHSD.length);
+      if (selectedHSD.length) $(selectedHSD[0]).find('a').click();
+      else localStorage.removeItem(lsSelectedHSD);
+    }, 200);
 
   function showInputPassword(pass) {
     if (event) event.preventDefault();
@@ -323,9 +333,9 @@ function prepareControls() {
     e.encrypt(sendData).then(
       encryptedData => {
         $(qrCodeArea).removeClass('d-none');
-        hsd['currentKey'] = inpCurrentPassword.val();
         if (hsd['currentKey'] && hsd['currentKey'] !== hsd['previousKey'])
           hsd['previousKey'] = hsd['currentKey'];
+        hsd['currentKey'] = inpCurrentPassword.val();
         if (inpNewPassword.val() !== '') {
           btnSaveNewPassword.addClass('bg-danger');
           btnSaveNewPassword.removeClass('d-none');

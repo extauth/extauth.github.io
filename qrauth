@@ -42,7 +42,8 @@ ffmpeg -loglevel quiet -hide_banner -y -f v4l2 -i /dev/video0 -r 4.0 -update 1 \
  -vf "extractplanes=y,crop=800:720:200:0,scale=400:360" $QRCODEPATH 2>&1 >/dev/null &
 ffpid=$!
 
-/usr/bin/eog /tmp/qrcode.bmp &
+(sleep 1; /usr/bin/eog $QRCODEPATH)&
+eogpid=$!
 
 #terminate() {
 #  kill -s SIGQUIT $ffpid
@@ -116,6 +117,7 @@ do
 done
 
 kill -3 $ffpid >/dev/null
+kill -3 $eogpid >/dev/null
 sleep 1 >/dev/null
 
 if [ "$TIMEOUT" -eq 0 -o -z "$PWDKEY" ]; then
@@ -125,6 +127,7 @@ if [ "$TIMEOUT" -eq 0 -o -z "$PWDKEY" ]; then
   exit 0
 else
 
+  rm $QRCODEPATH.dat $QRCODEPATH
   (sleep 3; keyctl unlink $KEYRING_ID>/dev/null)&
 #  keyctl pipe $KEYRING_ID | age -d -i - $QRCODEPATH.dat | sudo 2>/dev/null 1>/dev/null -S gnome-terminal --tab -- bash -c "sudo -i"
   echo "\n return the password ...\n">$TTY
