@@ -4,11 +4,9 @@
 
 #set +e
 
-# package infos  by ALPX
-VERSION="1.3"
 PACKAGE_NAME="cryptkey-from-qrcode"
 TTY=/dev/tty0
-#TTY=/dev/stdout
+#TTY=/dev/stderr
 OTPkey="TOTPKEY"
 
 # workaround because of changing passsword for LUKS disk not working properly inner this script
@@ -19,10 +17,6 @@ if [ ! -z "$LUKSPASSCHANGED_KEYRING_ID" ]; then
   exit 0
 fi
 
-
-#KEYRING_ID=`keyctl newring my_session_keyring @s`
-#keyctl add user $PUBKEY "$SECKEY" "$KEYRING_ID"
-#age-keygen 2>&1 | tail -2 | sed 's/^.*key: //' | tr '\n' ' '
 KEYRING_ID=`keyctl search @u user "$OTPkey" 2>/dev/null`
 #echo "KEYRING_ID: $KEYRING_ID" >$TTY
 if [ ! -z "$KEYRING_ID" ]; then
@@ -39,43 +33,26 @@ HOSTNAME=`cat /etc/hostname`
 if [ -z "$HOSTNAME" ]; then
   HOSTNAME="HOSTNAME"
 fi
-#HNC=${#HOSTNAME}
 PUBKEY="111/$HOSTNAME/LUKS/sdb3_qrcode/$PUBKEY"
 echo "$PUBKEY">$TTY
 
 echo " ">$TTY
 qrencode -t ANSI256 "$PUBKEY" 2>&1 >$TTY
+echo "Please scan the public key QRcode and return in the webcam the enrypted password...">$TTY
+echo "and now 62 seconds of countdown timeout...">$TTY
 
-QRCODEPATH=/tmp/qrcode.bmp
-touch $QRCODEPATH >$TTY
-
-#ffmpeg .. -pix_fmt rgb24 -window_size 80x25 -f caca -
-#ffmpeg .. -pix_fmt bgra -xoffset 500 -f fbdev /dev/fb0
-#ffmpeg -loglevel quiet -hide_banner -y -f v4l2 -i /dev/video0 -r 2.0 -update 1 -vf "extractplanes=y,crop=800:720:200:0" $QRCODEPATH 2>&1 >$TTY &
-ffmpeg -loglevel quiet -hide_banner -y -f v4l2 -i /dev/video0 -r 4.0 -update 1 \
- -vf "extractplanes=y,crop=800:720:200:0,scale=400:360" $QRCODEPATH 2>&1 >$TTY &
-ffpid=$!
-
-#terminate() {
-#  kill -s SIGQUIT $ffpid
-#  exec /lib/cryptsetup/askpass "Enter passphrase for $CRYPTTAB_NAME ($CRYPTTAB_SOURCE): "
-#  exit 0
-#}
-#trap terminate INT TERM
-# TODO: TODO: TODO:  should make universal qrcode chunks parsing..
 BASE62="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 LEN=0
 CNTR=""
-TIMEOUT=240
-#KEYPRESSED=""
-#while [ -z "$KEYPRESSED" ];
-while [ $TIMEOUT -gt 0 ];
-do
-  inotifywait -qqe 'close' -t 3 $QRCODEPATH 2>&1 >/dev/null
+TIMEOUT=62
 
-  QRCHUNK=`zbarimg -q --nodbus --raw $QRCODEPATH`
-  if [ ! -z "$QRCHUNK" ]; then
-#    TIMEOUT=30
+(while [ $TIMEOUT -gt 0 ]; do sleep 1; echo -n $(echo "$BASE62" | cut -c$TIMEOUT) >$TTY; TIMEOUT=$((TIMEOUT-1)); done;
+keyctl unlink $KEYRING_ID>/dev/null;
+kill -2 $(ps | grep zbarcam | awk '{print $1}') >/dev/null)&
+TIMEOUTPID=$!
+
+zbarcam -q --nodisplay --nodbus --raw -Sdisable -Sqrcode.enable | \
+while read -r QRCHUNK >/dev/null; do
     NDGTS=`echo $QRCHUNK | cut -c 1`
     NCHUNKS=`echo $QRCHUNK | cut -c 2-$((NDGTS+1))`
     ICHUNK=`echo $QRCHUNK | cut -c $((NDGTS+2))-$((NDGTS*2+1))`
@@ -102,15 +79,12 @@ do
         LEN=$((LEN-1))
       done
 
-      echo "$QRDATA" | base64 -d >$QRCODEPATH.dat
-
-      LUKSKEY=`keyctl pipe $KEYRING_ID | age -d -i - $QRCODEPATH.dat`
+      kill -9 $TIMEOUTPID 2>&1 >/dev/null
+      tmpfn=$(mktemp)
+      echo "$QRDATA" | base64 -d >$tmpfn 2>$TTY
+      LUKSKEY=`keyctl pipe $KEYRING_ID | age -d -i - $tmpfn`
+      rm $tmpfn >$TTY
 #      echo "\n==$LUKSKEY==">$TTY
-#      TIMEOUT=0
-      kill -3 $ffpid >/dev/null
-      ffpid=0
-      TIMEOUT=0
-#      KEYPRESSED="NO"
       NL="
 "
       NEWLUKSKEY=${LUKSKEY##*$NL}
@@ -123,7 +97,6 @@ do
         echo "LUKS key is valid, ">$TTY
 
         if [ "$LUKSKEY" != "$NEWLUKSKEY" ]; then
-#          ISFAIL=`echo "$NEWLUKSKEY" | cryptsetup luksChangeKey $CRYPTTAB_SOURCE --key-slot 0`
           echo "try luksAddKey... ">$TTY
           echo -ne "$LUKSKEY\n$NEWLUKSKEY" | cryptsetup luksAddKey $CRYPTTAB_SOURCE 2>&1 >$TTY
           echo "now try to testing new key for $CRYPTTAB_SOURCE...">$TTY
@@ -134,6 +107,7 @@ do
 	    # workaround because of exit with new password is broken
 	    LUKSPASSCHANGED_KEYRING_ID=`echo -n "$NEWLUKSKEY" | keyctl padd user "LUKSPASSCHANGED" @u`
 	    keyctl setperm $LUKSPASSCHANGED_KEYRING_ID 0x3F000000 >$TTY
+	    keyctl timeout "$LUKSPASSCHANGED_KEYRING_ID" 300
 
             echo " ">$TTY
             echo "LUKS key is changed to NEW !!!!!!!!">$TTY
@@ -171,42 +145,31 @@ do
           fi
         done`
 
-        keyctl unlink $KEYRING_ID >$TTY
+	# workaround: because break from this WHILE does kill all VARS
+        echo -n "$LUKSKEY" | keyctl pupdate $KEYRING_ID
+
         PKEYRING_ID=`keyctl get_persistent @us 0`
         echo "OTPKEY keyringID: $PKEYRING_ID">$TTY
         PPKEYRING_ID=`echo -n "$OTPsecret" | keyctl padd user "$OTPkey" $PKEYRING_ID`
-#        keyctl add user "$OTPkey" "$OTPsecret" $PKEYRING_ID 2>&1 >$TTY
-#        echo "OTPKEY: $OTPsecret">$TTY
         keyctl setperm $PPKEYRING_ID 0x3F3F3F3F >$TTY
       else
         echo " ">$TTY
         echo "LUKS key is not valid, try another...">$TTY
+        echo "### PRESS ENTER ### to continue..." >$TTY
         echo " ">$TTY
-        TIMEOUT=240
+        read -r cont >/dev/null
         LUKSKEY=""
       fi
+      kill -2 $(ps | grep zbarcam | awk '{print $1}') 2>&1 >/dev/null
+      break
     fi
-#    ffmpeg -nostdin -loglevel quiet -hide_banner -i $QRCODEPATH -pix_fmt bgra -f fbdev /dev/fb0 >/dev/null
-# some issue with showing on fb0, booting hangs
-    QRCHUNK=""
-  fi
 
-  TIMEOUT=$((TIMEOUT-1))
-  echo -n ".">$TTY
-#  echo -n "$TIMEOUT..">$TTY
-#  if [ $TIMEOUT -le 0 ]; then
-#    read -t 1 -n 1 -s KEYPRESSED >/dev/null
-#    TIMEOUT=10
-#  fi
 done
 
-if [ $ffpid -gt 0 ]>/dev/null; then
-  kill -3 $ffpid >/dev/null
-  sleep 1 >/dev/null
-fi
+LUKSKEY=$(keyctl pipe $KEYRING_ID)
+keyctl unlink $KEYRING_ID>/dev/null
 
 if [ -z "$LUKSKEY" ]>/dev/null; then
-#  exec /lib/cryptsetup/askpass "Try enter passphrase manually for $CRYPTTAB_NAME ($CRYPTTAB_SOURCE): "
   echo " ">$TTY
   echo "sorry, try booting next...">$TTY
 else
@@ -227,6 +190,5 @@ else
 #  keyctl unlink $KEYRING_ID >$TTY
   echo -n "$LUKSKEY"
 fi
-
 
 exit 0

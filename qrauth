@@ -1,15 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 # usage examples:
 # qrauth | sudo -S -v && sudo -i
 # qrauth | passwd
 
 
 #set +e
-# package infos  by ALPX
 #TTY=/dev/stdout
 TTY=/dev/stderr
 #TTY=/dev/null
-
 
 SESSPUBKEY="SESSPUBKEY"
 
@@ -32,105 +30,67 @@ PUBKEY=111/$HOSTNAME/qrauth/$WHOAMI/$PUBKEY
 echo " ">$TTY
 qrencode -t ANSI256UTF8 "$PUBKEY">$TTY
 echo "Please scan public key qrcode and return enrypted password...">$TTY
+echo "and now 62 seconds of countdown to stop(or press Ctrl+C)...">$TTY
 
-QRCODEPATH=/tmp/qrcode.bmp
-touch $QRCODEPATH >$TTY
 
-# -pix_fmt rgb24 -window_size 80x25 -f caca -
-# -pix_fmt bgra -xoffset 500 -f fbdev /dev/fb0
-ffmpeg -loglevel quiet -hide_banner -y -f v4l2 -i /dev/video0 -r 4.0 -update 1 \
- -vf "extractplanes=y,crop=800:720:200:0,scale=400:360" $QRCODEPATH 2>&1 >/dev/null &
-ffpid=$!
-
-sleep 1
-eog $QRCODEPATH >/dev/null &
-eogpid=$!
-
-#terminate() {
-#  kill -s SIGQUIT $ffpid
-#  exec /lib/cryptsetup/askpass "Enter passphrase for $CRYPTTAB_NAME ($CRYPTTAB_SOURCE): "
-#  exit 0
-#}
-#trap terminate INT TERM
-NEWPWDKEY=""
 BASE62="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 LEN=0
 CNTR=""
-TIMEOUT=240
-while [ $TIMEOUT -gt 0 ];
-do
-  inotifywait -qqe 'close' -t 3 $QRCODEPATH 2>&1 1>/dev/null
+TIMEOUT=62
+SELFPID=$$
+(while [ $TIMEOUT -gt 0 ]; do sleep 1; echo "$BASE62" | cut -zc$TIMEOUT >$TTY; TIMEOUT=$((TIMEOUT-1)); done;
+keyctl unlink $KEYRING_ID>/dev/null;
+kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | awk '{print $2}') 2>&1  >/dev/null)&
+TIMEOUTPID=$!
 
-  QRCHUNK=`zbarimg -q --nodbus --raw $QRCODEPATH`
-  if [ ! -z "$QRCHUNK" ]>/dev/null; then
-    TIMEOUT=60
-    NDGTS=`echo $QRCHUNK | cut -c 1`
-    NCHUNKS=`echo $QRCHUNK | cut -c 2-$((NDGTS+1))`
-    ICHUNK=`echo $QRCHUNK | cut -c $((NDGTS+2))-$((NDGTS*2+1))`
-    echo " ">$TTY
-    echo -n "{$ICHUNK/$NCHUNKS: ">$TTY
-    ICHUNK=$(echo "obase=10; ibase=10; ${ICHUNK}" | bc)
-    QRCHUNK=`echo "$QRCHUNK" | cut -c $((NDGTS*2+2))-`
-    f=$(echo "$BASE62" | cut -c$ICHUNK)
-    if echo "$CNTR" | grep -q $f; then
-      echo -n "$LEN} # ">$TTY
-    else
-      CNTR=$CNTR$f
-      VARCHUNK="QRCHUNK$ICHUNK"
-      eval "$VARCHUNK=\"$QRCHUNK\""
-      LEN=$((LEN+1))
-      echo -n "$LEN} ">$TTY
-    fi
-    if [ $LEN -eq $NCHUNKS ]>/dev/null; then
-      QRDATA=""
-      while [ $LEN -gt 0 ]; do
-        VARCHUNK="QRCHUNK$LEN"
-        eval "VAR=\$${VARCHUNK}"
-        QRDATA=$VAR$QRDATA
-        LEN=$((LEN-1))
-      done
+terminate() {
+  kill -9 $TIMEOUTPID 2>&1 >/dev/null
+  keyctl unlink $KEYRING_ID>/dev/null
+  echo ""
+  exit 0
+}
+trap terminate INT TERM
 
-      echo "$QRDATA" | base64 -d >$QRCODEPATH.dat
-      PWDKEY=`keyctl pipe $KEYRING_ID | age -d -i - $QRCODEPATH.dat`
-      TIMEOUT=0
-      NL="
-"
-#      echo "   PWDKEY: ==$PWDKEY==">$TTY
-#      NEWPWDKEY=${PWDKEY##*$NL}
-#      PWDKEY=${PWDKEY%$NL*}
-#      echo "   PWDKEY: ==$PWDKEY==">$TTY
-#      echo "NEWPWDKEY: ==$NEWPWDKEY==">$TTY
-#      if [ "$PWDKEY" != "$NEWPWDKEY" ]; then
-        #TODO: change password
-#        keyctl pipe $KEYRING_ID | age -d -i - $QRCODEPATH.dat | passwd
-#        (sleep 3; keyctl unlink $KEYRING_ID>/dev/null)&
-#        echo "\n!!! New password is set !!!\n">$TTY
-#        echo -n "$NEWPWDKEY\n$PWDKEY"
-#        exit 0
-#      fi
 
-    fi
-    QRCHUNK=""
+zbarcam -q --nodisplay --nodbus --raw -Sdisable -Sqrcode.enable | \
+while read -r QRCHUNK >/dev/null; do
+  NDGTS=`echo $QRCHUNK | cut -c 1`
+  NCHUNKS=`echo $QRCHUNK | cut -c 2-$((NDGTS+1))`
+  ICHUNK=`echo $QRCHUNK | cut -c $((NDGTS+2))-$((NDGTS*2+1))`
+  echo " ">$TTY
+  echo -n "{$ICHUNK/$NCHUNKS: ">$TTY
+  ICHUNK=$(echo "obase=10; ibase=10; ${ICHUNK}" | bc)
+  QRCHUNK=`echo "$QRCHUNK" | cut -c $((NDGTS*2+2))-`
+  f=$(echo "$BASE62" | cut -c$ICHUNK)
+  if echo "$CNTR" | grep -q $f; then
+    echo -n "$LEN} # ">$TTY
+  else
+    CNTR=$CNTR$f
+    VARCHUNK="QRCHUNK$ICHUNK"
+    eval "$VARCHUNK=\"$QRCHUNK\""
+    LEN=$((LEN+1))
+    echo -n "$LEN} ">$TTY
   fi
+  if [ $LEN -eq $NCHUNKS ]>/dev/null; then
+    QRDATA=""
+    while [ $LEN -gt 0 ]; do
+      VARCHUNK="QRCHUNK$LEN"
+      eval "VAR=\$${VARCHUNK}"
+      QRDATA=$VAR$QRDATA
+      LEN=$((LEN-1))
+    done
 
-  echo -n "$TIMEOUT..">$TTY
-  TIMEOUT=$((TIMEOUT-1))
+    tmpfn=$(mktemp)
+    echo "$QRDATA" | base64 -d >$tmpfn
+    keyctl pipe $KEYRING_ID | age -d -i - $tmpfn | keyctl pupdate $KEYRING_ID  # workaround: because breaks from this WHILE does kill all VARS
+    rm $tmpfn
+    kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | awk '{print $2}') 2>&1 >/dev/null
+    break
+  fi
 done
 
-kill -3 $ffpid >/dev/null
-kill -9 $eogpid >/dev/null
-sleep 1 >/dev/null
-
-if [ "$TIMEOUT" -eq 0 -o -z "$PWDKEY" ]; then
-#  exec /lib/cryptsetup/askpass "Try enter passphrase manually for $CRYPTTAB_NAME ($CRYPTTAB_SOURCE): "
-  echo "\nsorry, try again...">$TTY
-  keyctl unlink $KEYRING_ID>/dev/null
-  exit 0
-else
-  rm $QRCODEPATH.dat $QRCODEPATH
-  (sleep 3; keyctl unlink $KEYRING_ID>/dev/null)&
-#  keyctl pipe $KEYRING_ID | age -d -i - $QRCODEPATH.dat | sudo 2>/dev/null 1>/dev/null -S gnome-terminal --tab -- bash -c "sudo -i"
-  echo "\nreturn the password(s) ...\n">$TTY
-  echo "$PWDKEY"
-  exit 0
-fi
+kill -9 $TIMEOUTPID 2>&1 >/dev/null
+#echo "\nreturn the password(s) ...\n">$TTY
+keyctl pipe $KEYRING_ID
+keyctl unlink $KEYRING_ID>/dev/null
+exit 0
