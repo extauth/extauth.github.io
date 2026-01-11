@@ -166,14 +166,16 @@ function prepareControls() {
   function activateProgressBar(periodSeconds, intervalSeconds, callback) {
     progressBar.css('width', Math.floor(periodSeconds/intervalSeconds*100)+'%');
     //if (refreshOtpTimeout) clearTimeout(refreshOtpTimeout);
-    refreshOtpTimeout = setTimeout(refreshOtp, periodSeconds * 1000);
+    if (callback === refreshOtp)
+      refreshOtpTimeout = setTimeout(refreshOtp, periodSeconds * 1000);
     if (refreshOtpintervalTimer)
       clearInterval(refreshOtpintervalTimer);
     refreshOtpintervalTimer = setInterval(function () {
-      if (periodSeconds-- <= 0) {
+      if (periodSeconds-- <= 1) {
         clearInterval(refreshOtpintervalTimer);
+        progressBar.css('width', '0%');
         if (callback) callback();
-      }
+      } else
       progressBar.css('width', (periodSeconds > 0 ? Math.floor(periodSeconds/intervalSeconds*100) : 100) +'%');
     },1000);
   }
@@ -198,7 +200,7 @@ function prepareControls() {
     if (!$(qrCodeArea).hasClass('d-none')) {
       progressBar.removeClass('bg-warning');
       progressBar.addClass('bg-success');
-      activateProgressBar(30 - Math.floor((Date.now() / 1000) % 30), 30, stopShowQRcode)
+      activateProgressBar(30 - Math.floor((Date.now() / 1000) % 30), 30, refreshOtp);
     } else
       stopShowQRcode();
   }
@@ -229,9 +231,16 @@ function prepareControls() {
     clearInterval(refreshOtpintervalTimer);
     clearTimeout(refreshOtpTimeout);
     passwordsFromSource(0, inpKeyDest.val());
+    preventDoubleClick = false;
+    isQrCodeScannedFlag = 0;
   }
+  let preventDoubleClick = false;
   function btnShowAction() {
+    console.log(this, event, preventDoubleClick);
     if (event) event.preventDefault();
+    if (preventDoubleClick)
+      return;
+    preventDoubleClick = true;
     settingsArea.addClass('d-none');
     btnSettings.removeClass('bg-primary');
     whatTheArea.addClass('d-none');
@@ -328,6 +337,8 @@ function prepareControls() {
     btnShowQrCode.find('svg').attr('fill', 'yellow');
     btnScanSessionPubkey.find('svg').attr('fill', 'yellow');
     isQrCodeScannedFlag = 2;
+    clearInterval(refreshOtpintervalTimer);
+    progressBar.css('width', '0%');
   }
   function initScanner() {
     scanner = new QrScanner(elQrCodeVideo, qrScanned, {
@@ -369,7 +380,7 @@ function prepareControls() {
         const data = encryptedData.toBase64();
         if (selectedHSD.usbIP !== '0.0.0.0') {
           let requrl = 'http://'+selectedHSD.usbIP+':54321/&'+data;
-          console.log(requrl);
+          //console.log(requrl);
           fetch(requrl,{mode: 'no-cors'}).then(response => {
             if (response.type === 'opaque')
               qrAnimationTimeout = 1;
@@ -387,6 +398,7 @@ function prepareControls() {
         }
         let fulllen = 0;
         let i = 0;
+        $(qrCodeArea).html('');
         while (++i <= numOfChunks && chunklen) {
           let chunkStr =
             numOfChunksDigits.toString()
@@ -427,7 +439,8 @@ function prepareControls() {
             clearInterval(qrInterval);
             isQrCodeScannedFlag = 0;
             passwordsFromSource(0, inpKeyDest.val());
-          }
+            preventDoubleClick = false;
+          } else
           progressBar.css('width', Math.floor(qrAnimationTimeout/180*100) +'%');
         },250);
       });
