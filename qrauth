@@ -57,7 +57,7 @@ while read -sr get >/dev/null; do
 
   ZBARPID=$(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}')
   if [ ! -z "$ZBARPID" ]>/dev/null; then
-    kill -2 $ZBARPID 2>&1 >/dev/null
+    kill -2 $ZBARPID >/dev/null
   fi
   rm $tmpfn >/dev/null
   break
@@ -71,16 +71,16 @@ LEN=0
 CNTR=""
 TIMEOUT=62
 (while [ -e $tmpfifo -a $TIMEOUT -gt 0 ]>/dev/null; do
-  sleep 0.1 >/dev/null
+  sleep 1 >/dev/null
   echo "$BASE62" | cut -zc$TIMEOUT >$TTY
   TIMEOUT=$((TIMEOUT-1))
  done
- kill -2 $(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}') 2>&1 >/dev/null
- kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') 2>&1 >/dev/null
+ kill -2 $(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}') >/dev/null
+ kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') >/dev/null
  keyctl unlink $KEYRING_ID>/dev/null
  KEYRING_ID=
 # rm $tmpfifo >/dev/null
-)2>&1 >/dev/null &
+)&
 TIMEOUTPID=$!
 #echo "TIMEOUTPID: $TIMEOUTPID"
 
@@ -128,7 +128,7 @@ while read -r QRCHUNK >/dev/null; do
     echo "$QRDATA" | base64 -d >$tmpfn
     keyctl pipe $KEYRING_ID | age -d -i - $tmpfn | keyctl pupdate $KEYRING_ID  # workaround: because breaks from this WHILE does kill all VARS
     rm $tmpfn
-    kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') 2>&1 >/dev/null
+    kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') >/dev/null
     echo "." >$tmpfifo
     rm -f $tmpfifo >/dev/null
     break
@@ -143,8 +143,8 @@ sleep 0.1
 
 echo "">$TTY
 if [ ! -z $KEYRING_ID ]>/dev/null; then
-  keyctl pipe $KEYRING_ID 2>/dev/null
-  keyctl unlink $KEYRING_ID 2>&1 >/dev/null
+  keyctl pipe $KEYRING_ID
+  keyctl unlink $KEYRING_ID >/dev/null
 fi
 echo "">$TTY
 
@@ -152,7 +152,7 @@ echo "">$TTY
 NCPID=$(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}')
 #echo "NCPID: $NCPID"
 if [ ! -z "$NCPID" ] >/dev/null; then
-  kill -2 $NCPID 2>&1 >/dev/null
+  kill -2 $NCPID >/dev/null
 #  kill -2 $FIFOPID 2>&1 >/dev/null
 fi
 
@@ -160,7 +160,7 @@ sleep 0.1
 
 TOPID=$(ps -A | grep $TIMEOUTPID)
 if [ ! -z "$TOPID" ]; then
-  kill -9 $TIMEOUTPID 2>&1 >/dev/null
+  kill -9 $TIMEOUTPID >/dev/null
 fi
 
 #echo "\nreturn the password(s) ...\n">$TTY

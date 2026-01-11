@@ -29,15 +29,41 @@ PUBKEY=`keyctl pipe $KEYRING_ID | age-keygen -y`
 #sha256sum=`echo $PUBKEY | sha256sum`
 #echo "$PUBKEY:$sha256sum"
 
+
+WIFIIFCIP="10.11.12.13"
+DEVNAME=$(iw list | awk '/Wiphy/ {print $2}')
+echo "DEVNAME: $DEVNAME" >$TTY
+WLAN_IFACE="wlan0"
+iw $DEVNAME interface add $WLAN_IFACE type managed addr 10:11:12:13:14:15 >$TTY
+sleep 1  >$TTY
+ip addr add $WIFIIFCIP/24 dev $WLAN_IFACE >$TTY
+
+cat <<EOF > /tmp/hostapd.conf
+interface=wlan0
+driver=nl80211
+ssid=alpxLUKSunlock
+hw_mode=g
+channel=1
+auth_algs=1
+wpa=0
+EOF
+
+hostapd /tmp/hostapd.conf >/tmp/hostapd.log &
+HOSTAPDPID=$!
+dnsmasq -u root -i wlan0 -R -e -L -8 /tmp/dnsmasq.log -l /tmp/dnsmasq.leases -x /tmp/dnsmasq.pid -F 10.11.12.1,10.11.12.11,5m -A /#/10.11.12.13 >/tmp/dnsmasq.log &
+DNSMASQPID=$!
+echo "HOSTAPDPID: $HOSTAPDPID, DNSMASQPID: $DNSMASQPID" >$TTY
+
+
 HOSTNAME=`cat /etc/hostname`
 if [ -z "$HOSTNAME" ]; then
   HOSTNAME="HOSTNAME"
 fi
-PUBKEY="111/$HOSTNAME/LUKS/sdb3_qrcode/$PUBKEY"
+PUBKEY=111/$HOSTNAME/LUKS/sdb3_qrcode/$WIFIIFCIP/$PUBKEY
 echo "$PUBKEY">$TTY
 
 echo " ">$TTY
-qrencode -t ANSI256 "$PUBKEY" 2>&1 >$TTY
+qrencode -t ANSI256 "$PUBKEY" >$TTY
 echo "Please scan the public key QRcode...">$TTY
 echo "and now 62 seconds of countdown timeout...">$TTY
 
@@ -48,7 +74,10 @@ TIMEOUT=62
 
 (while [ $TIMEOUT -gt 0 ]; do sleep 1; echo -n $(echo "$BASE62" | cut -c$TIMEOUT) >$TTY; TIMEOUT=$((TIMEOUT-1)); done;
 keyctl unlink $KEYRING_ID>/dev/null;
-kill -2 $(ps | grep zbarcam | awk '{print $1}') >/dev/null)&
+kill -2 $(ps | grep zbarcam | awk '{print $1}') >/dev/null
+kill -2 $(ps | grep hostapd | awk '{print $1}') >/dev/null
+kill -2 $(ps | grep dnsmasq | awk '{print $1}') >/dev/null
+)&
 TIMEOUTPID=$!
 
 zbarcam -q --nodisplay --nodbus --raw -Sdisable -Sqrcode.enable | \
@@ -79,7 +108,8 @@ while read -r QRCHUNK >/dev/null; do
         LEN=$((LEN-1))
       done
 
-      kill -9 $TIMEOUTPID 2>&1 >/dev/null
+      kill -9 $TIMEOUTPID >/dev/null
+      kill -9 $HOSTAPDPID $DNSMASQPID 2>&1 >/dev/null
       tmpfn=$(mktemp)
       echo "$QRDATA" | base64 -d >$tmpfn 2>$TTY
       LUKSKEY=`keyctl pipe $KEYRING_ID | age -d -i - $tmpfn`
@@ -91,19 +121,19 @@ while read -r QRCHUNK >/dev/null; do
       LUKSKEY=${LUKSKEY%$NL*}
 #      echo "   LUKSKEY: ==$LUKSKEY==">$TTY
 #      echo "NEWLUKSKEY: ==$NEWLUKSKEY==">$TTY
-      ISFAIL=`echo -n "$LUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE 2>&1`
+      ISFAIL=`echo -n "$LUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE`
       if [ -z "$ISFAIL" ]; then
         echo " ">$TTY
         echo "LUKS key is valid, ">$TTY
 
         if [ "$LUKSKEY" != "$NEWLUKSKEY" ]; then
           echo "try luksAddKey... ">$TTY
-          echo -ne "$LUKSKEY\n$NEWLUKSKEY" | cryptsetup luksAddKey $CRYPTTAB_SOURCE 2>&1 >$TTY
+          echo -ne "$LUKSKEY\n$NEWLUKSKEY" | cryptsetup luksAddKey $CRYPTTAB_SOURCE >$TTY
           echo "now try to testing new key for $CRYPTTAB_SOURCE...">$TTY
-          ISFAIL=`echo -n "$NEWLUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE 2>&1`
+          ISFAIL=`echo -n "$NEWLUKSKEY" | cryptsetup open --test-passphrase $CRYPTTAB_SOURCE`
           if [ -z "$ISFAIL" ]; then
             echo "try luksRemoveKey remove old keyslote... ">$TTY
-            echo -n "$LUKSKEY" | cryptsetup luksRemoveKey $CRYPTTAB_SOURCE 2>&1 >$TTY
+            echo -n "$LUKSKEY" | cryptsetup luksRemoveKey $CRYPTTAB_SOURCE >$TTY
 	    # workaround because of exit with new password is broken
 	    LUKSPASSCHANGED_KEYRING_ID=`echo -n "$NEWLUKSKEY" | keyctl padd user "LUKSPASSCHANGED" @u`
 	    keyctl setperm $LUKSPASSCHANGED_KEYRING_ID 0x3F000000 >$TTY
@@ -160,7 +190,7 @@ while read -r QRCHUNK >/dev/null; do
         read -r cont >/dev/null
         LUKSKEY=""
       fi
-      kill -2 $(ps | grep zbarcam | awk '{print $1}') 2>&1 >/dev/null
+      kill -2 $(ps | grep zbarcam | awk '{print $1}') >/dev/null
       break
     fi
 
