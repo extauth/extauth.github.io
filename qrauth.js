@@ -116,8 +116,13 @@ function prepareControls() {
   });
   function passwordsFromSource(e, pass) {
     if (event) event.preventDefault();
-    if (isQrCodeScannedFlag)
+    if (isQrCodeScannedFlag) {
+      if (isQrCodeScannedFlag === 2 && !pass) {
+        let hsd = $(this).parent()[0].id.split('_');
+        inpCurrentPassword.val(objHSD[hsd[0]][hsd[1]][hsd[2]]['currentKey']);
+      }
       return;
+    }
     let the = pass ? pass : $(this).html();
     inpKeyDest.val(the);
     let arr = the.split('/');

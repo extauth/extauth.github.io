@@ -17,8 +17,10 @@
   <style>
     .bg-success-highlight {background-color: rgb(0, 255, 0, 0.55);}
     .text-success-highlight {color: #00ff00;}
+    input::placeholder {font-size: 0.7em; line-height: 0.1em}
+    .form-label {font-size: 0.7em}
     #selHstSrvDst li {
-        font-size: small;
+      font-size: small;
     }
   </style>
   <script>
@@ -39,12 +41,12 @@
   <div id="cardArea" class="card">
     <div class="card-body m-0 p-0 ms-2 me-2">
       <label for="inpKeyDestination" class="form-label m-0 p-0">
-        <small style="font-size: 0.7em">Destination (obtain from a scanned QR code)</small>
+        Destination (obtain from a scanned QR code)
       </label>
       <br>
       <div class="input-group input-group-sm" role="group">
         <input id="inpKeyDestination" type="text" class="form-control ps-2 pe-2" name="username" autocomplete="username"
-               placeholder="hostName/serviceName/destinationName" style="font-size: small">
+               placeholder="hostName/serviceName/destinationName">
         <button class="btn btn-outline-secondary d-none" id="btnClearKeyDestination">&#10060;</button>
         <button id="btnKeyDestList" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                 type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
@@ -58,25 +60,25 @@
         </ul>
       </div>
       <label for="inpCurrentPassword" class="form-label m-0 p-0 d-inline-block w-100">
-        <small style="font-size: 0.7em">The current valid password key for the destination</small>
+        The current valid password key for the destination
       </label>
       <br>
       <div class="input-group input-group-sm">
         <input id="inpCurrentPassword" type="password" class="form-control" name="password" autocomplete="current-password"
-               aria-label="Enter the current password key"/>
+               placeholder="Enter key or insert it from existed dest by select item in list"/>
         <button class="btn btn-outline-secondary text-success-highlight bg-black d-none" id="labelOTPcode" data-bs-target="#inpCurrentPassword"></button>
         <button class="btn btn-outline-secondary d-none" id="btnClearPassword">&#10060;</button>
         <button class="btn btn-outline-secondary d-none" id="btnRevertPreviousPassword" style="font-size: x-large; line-height: 0">&#8634;</button>
         <button class="btn btn-outline-secondary" id="btnShowCurrentPassword" data-bs-target="#inpCurrentPassword">&#x1F441;</button>
       </div>
       <label for="inpNewPassword" class="form-label mb-0">
-        <small style="font-size: 0.7em">Change the current password to a new <i id="lblNewPasswordsLength"></i></small>
+        Change the current password to a new <i id="lblNewPasswordsLength"></i>
       </label>
       <br>
       <div class="input-group input-group-sm mb-3">
         <button class="btn btn-outline-secondary" id="btnGenerateNewPassword">&#127922;</button>
         <input id="inpNewPassword" type="password" class="form-control"
-               aria-label="Enter a new password key"/>
+               placeholder="Enter a new key or generate by clicking on dice"/>
         <button class="btn btn-outline-secondary d-none" id="btnClearNewPassword">&#10060;</button>
         <button class="btn btn-outline-secondary d-none" type="submit" id="btnSaveNewPassword">&#128190;</button>
         <button class="btn btn-outline-secondary" id="btnShowNewPassword" data-bs-target="#inpNewPassword">&#x1F441;</button>
@@ -184,7 +186,7 @@
             id="btnShowHelp">WhatThe?</button>
     <input type="text" class="form-control p-0 m-0 ps-2 pe-2"
            style="font-weight: lighter; font-size: x-small; width: 10em; text-align: end"
-           value="v.1.1.9 (20260111)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
+           value="v.1.1.10 (20260114)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
     <button class="btn btn-secondary p-0 m-0 ps-1 pe-1" type="button" style="height: 1.5em; color: black"
             id="btnUpdateVersion">&#10227;</button>
   </div>
