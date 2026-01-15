@@ -1,23 +1,23 @@
 #!/bin/bash
 # usage examples:
-# qrauth | sudo -S -v && sudo -i
-# qrauth | passwd
+# qrauth
+# qrauth && sudo -i
 
 
 #set +e
 #TTY=/dev/stdout
 TTY=/dev/stderr
-#TTY=/dev/null
+NUL=/dev/null
 
 SELFPID=$$
 SESSPUBKEY="SESSPUBKEY"
 
-KEYRING_ID=`keyctl search @u user "$SESSPUBKEY" 2>/dev/null`
+KEYRING_ID=`keyctl search @u user "$SESSPUBKEY" 2>$NUL`
 if [ ! -z "$KEYRING_ID" ]; then
   keyctl unlink $KEYRING_ID >$TTY
 fi
 
-KEYRING_ID=`age-keygen 2>/dev/null | grep AGE-SECRET-KEY | keyctl padd user "$SESSPUBKEY" @u`
+KEYRING_ID=`age-keygen 2>$NUL | grep AGE-SECRET-KEY | keyctl padd user "$SESSPUBKEY" @u`
 PUBKEY=`keyctl pipe $KEYRING_ID | age-keygen -y`
 
 USBIFCIP="0.0.0.0"
@@ -39,14 +39,14 @@ PUBKEY=111/$HOSTNAME/qrauth/$WHOAMI/$USBIFCIP/$PUBKEY
 
 echo " ">$TTY
 qrencode -t ANSI256UTF8 "$PUBKEY">$TTY
-echo "Please scan public key qrcode...">$TTY
-echo "and now 62 seconds of countdown to stop(or press Ctrl+C)...">$TTY
+echo "Please scan public key qrcode from QR Authentication PWA UI">$TTY
+echo "and now 62 countdown seconds to send passkey via QR codes (or press Ctrl+C)...">$TTY
 
 tmpfifo=/tmp/qrauth.nc.fifo
 mkfifo $tmpfifo
 (
 cat $tmpfifo | nc -l -p 54321 | grep --line-buffered GET | \
-while read -sr get >/dev/null; do
+while read -sr get >$NUL; do
   get=${get##*&}
   QRDATA=${get% *}
   echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: *\r\n\r\nOK" >$tmpfifo
@@ -56,40 +56,38 @@ while read -sr get >/dev/null; do
   keyctl pipe $KEYRING_ID | age -d -i - $tmpfn | keyctl pupdate $KEYRING_ID  # workaround: because breaks from this WHILE does kill all VARS
 
   ZBARPID=$(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}')
-  if [ ! -z "$ZBARPID" ]>/dev/null; then
-    kill -2 $ZBARPID >/dev/null
+  if [ ! -z "$ZBARPID" ]>$NUL; then
+    kill -2 $ZBARPID >$NUL
   fi
-  rm $tmpfn >/dev/null
+  rm $tmpfn >$NUL
   break
 done
-rm -f $tmpfifo >/dev/null
-)>/dev/null &
+rm -f $tmpfifo >$NUL
+)>$NUL &
 FIFOPID=$!
 
 BASE62="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 LEN=0
 CNTR=""
 TIMEOUT=62
-(while [ -e $tmpfifo -a $TIMEOUT -gt 0 ]>/dev/null; do
-  sleep 1 >/dev/null
+(while [ -e $tmpfifo -a $TIMEOUT -gt 0 ]>$NUL; do
+  sleep 1 >$NUL
   echo "$BASE62" | cut -zc$TIMEOUT >$TTY
   TIMEOUT=$((TIMEOUT-1))
  done
- kill -2 $(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}') >/dev/null
- kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') >/dev/null
- keyctl unlink $KEYRING_ID>/dev/null
+ keyctl unlink $KEYRING_ID>$NUL
  KEYRING_ID=
-# rm $tmpfifo >/dev/null
+# rm $tmpfifo >$NUL
 )&
 TIMEOUTPID=$!
 #echo "TIMEOUTPID: $TIMEOUTPID"
 
 terminate() {
 #  echo "." >$tmpfifo
-#  kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') 2>&1 >/dev/null
-#  kill -9 $TIMEOUTPID 2>&1 >/dev/null
-#  kill -2 $(ps -Af | grep "nc -l -p 54321" | awk '{print $2}') 2>&1 >/dev/null
-#  keyctl unlink $KEYRING_ID>/dev/null
+#  kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') 2>&1 >$NUL
+#  kill -9 $TIMEOUTPID 2>&1 >$NUL
+#  kill -2 $(ps -Af | grep "nc -l -p 54321" | awk '{print $2}') 2>&1 >$NUL
+#  keyctl unlink $KEYRING_ID>$NUL
   echo ""
   exit 0
 }
@@ -97,7 +95,7 @@ trap terminate INT TERM
 
 
 zbarcam -q --nodisplay --nodbus --raw -Sdisable -Sqrcode.enable | \
-while read -r QRCHUNK >/dev/null; do
+while read -r QRCHUNK >$NUL; do
   NDGTS=`echo $QRCHUNK | cut -c 1`
   NCHUNKS=`echo $QRCHUNK | cut -c 2-$((NDGTS+1))`
   ICHUNK=`echo $QRCHUNK | cut -c $((NDGTS+2))-$((NDGTS*2+1))`
@@ -115,7 +113,7 @@ while read -r QRCHUNK >/dev/null; do
     LEN=$((LEN+1))
     echo -n "$LEN} ">$TTY
   fi
-  if [ $LEN -eq $NCHUNKS ]>/dev/null; then
+  if [ $LEN -eq $NCHUNKS ]>$NUL; then
     QRDATA=""
     while [ $LEN -gt 0 ]; do
       VARCHUNK="QRCHUNK$LEN"
@@ -127,42 +125,51 @@ while read -r QRCHUNK >/dev/null; do
     tmpfn=$(mktemp)
     echo "$QRDATA" | base64 -d >$tmpfn
     keyctl pipe $KEYRING_ID | age -d -i - $tmpfn | keyctl pupdate $KEYRING_ID  # workaround: because breaks from this WHILE does kill all VARS
+
     rm $tmpfn
-    kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') >/dev/null
+    kill -2 $(ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}') >$NUL
     echo "." >$tmpfifo
-    rm -f $tmpfifo >/dev/null
+    rm -f $tmpfifo >$NUL
     break
   fi
 done
 
 sleep 0.1
-#if [ -e $tmpfifo ]>/dev/null; then
-  echo "." >$tmpfifo
-  rm -f $tmpfifo >/dev/null
-#fi
 
 echo "">$TTY
-if [ ! -z $KEYRING_ID ]>/dev/null; then
-  keyctl pipe $KEYRING_ID
-  keyctl unlink $KEYRING_ID >/dev/null
+if [ ! -z $KEYRING_ID ]>$NUL; then
+#  keyctl pipe $KEYRING_ID && sudo -S -v
+  PASSKEY=$(keyctl pipe $KEYRING_ID)
+  NL="
+"
+  CURRPASS=${PASSKEY%$NL*}
+  NEWPASS=${PASSKEY##*$NL}
+  echo -n "$CURRPASS" | sudo -S -v >$NUL
+  if [ "$CURRPASS" != "$NEWPASS" ]; then
+    echo "$WHOAMI:$NEWPASS" | sudo chpasswd >$TTY
+    echo "New password for $WHOAMI is applied" >$TTY
+  fi
+  echo "Now may execute sudo -i to get the root... (15sec)" >$TTY
+  keyctl unlink $KEYRING_ID >$NUL
 fi
 echo "">$TTY
 
-
-NCPID=$(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}')
-#echo "NCPID: $NCPID"
-if [ ! -z "$NCPID" ] >/dev/null; then
-  kill -2 $NCPID >/dev/null
-#  kill -2 $FIFOPID 2>&1 >/dev/null
+if [ "$USBIFCIP" != "0.0.0.0" ]; then
+  NCPID=$(ps -Af | egrep "nc -l -p 54321" | grep -v grep | awk '{print $2}')
+  kill -2 $NCPID >$NUL
+  kill -2 $FIFOPID >$NUL
 fi
 
 sleep 0.1
 
+#if [ -e $tmpfifo ]>$NUL; then
+  echo "." >$tmpfifo
+  rm -f $tmpfifo >$NUL
+#fi
+
 TOPID=$(ps -A | grep $TIMEOUTPID)
 if [ ! -z "$TOPID" ]; then
-  kill -9 $TIMEOUTPID >/dev/null
+  kill -9 $TIMEOUTPID >$NUL
 fi
-
-#echo "\nreturn the password(s) ...\n">$TTY
 
 exit 0
