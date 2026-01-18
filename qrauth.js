@@ -15,6 +15,12 @@ let objHSD = { // object description
 let lsSelectedHSD = 'selectedHSD';
 let selectedHSD = undefined;
 
+function YYYYMMDDHHmmSS() {
+  let ts = new Date();
+  function n2(n) {return ('00' + n.toString(2)).slice(-2)}
+  return ts.getFullYear().toString() + n2(ts.getMonth()+1) + n2(ts.getDate())
+      + n2(ts.getHours()) + n2(ts.getMinutes()) + n2(ts.getSeconds());
+}
 function prepareControls() {
 
   let colorHighlightSuccess = $('.bg-success-highlight').css('background-color');
@@ -165,13 +171,14 @@ function prepareControls() {
           let theData = thePass === '.' ? localStorage[lsHSD] : age.armor.encode(encryptedData);
           try {
             const handle = await window.showSaveFilePicker({
-              suggestedName: 'qrauth-' + Date.now() + '.age',
+              suggestedName: 'qrauth-' + YYYYMMDDHHmmSS() + (thePass === '.' ? '.json' : '.age'),
             });
             const writable = await handle.createWritable();
             await writable.write(theData);
             await writable.close();
           } catch (err) {
-            saveViaAnchor(theData);
+            //saveViaAnchor(theData);
+            console.log(err);
           }
         });
     })
@@ -182,7 +189,7 @@ function prepareControls() {
     TOTP6.generateSecretKey(thePass, async function (key) {
       const [fileHandle] = await window.showOpenFilePicker({
         types: [{
-          accept: {'text/plain': ['.age']}
+          accept: {'text/plain': [(thePass === '.' ? '.json' : '.age')]}
         }]
       });
 
@@ -358,7 +365,7 @@ function prepareControls() {
     inpCurrentPassword.val(selectedHSD[doShowPrevPass ? 'previousKey' : 'currentKey']);
     inpCurrentPassword[doShowPrevPass ? 'addClass' : 'removeClass']('text-danger');
     btnClearPassword[doShowPrevPass ? 'removeClass' : 'addClass']('d-none');
-    btnRevertPreviousPassword.html(doShowPrevPass ? '&#8635;' : '&#8634;'); // 11118/8635 | 11119/8634
+    btnRevertPreviousPassword.find('span').html(doShowPrevPass ? '&#8635;' : '&#8634;'); // 11118/8635 | 11119/8634
   });
   btnClearPassword.click(function () {
     event.preventDefault();
@@ -379,8 +386,22 @@ function prepareControls() {
   let scanner = null;
   let unlockButtonSaveNewPassword = false;
   let isQrCodeScannedFlag = 0;
+  function showQRcodeAlert() {
+    let alertIncomatibleQRCodePanel = $('#alertIncomatibleQRCodePanel');
+    alertIncomatibleQRCodePanel.removeClass('d-none');
+    setTimeout(function () {
+      alertIncomatibleQRCodePanel.addClass('d-none');
+    }, 3000);
+  }
   async function qrScanned(resp) {
+    scanner.stop();
+    isQrCodeScannedFlag = 0;
+    clearInterval(refreshOtpintervalTimer);
+    progressBar.css('width', '0%');
+    $(qrCodeArea).html('');
+    $(elQrCodeVideo).addClass('d-none');
     let arr = resp.data.split('/');
+    if (arr.length < 5) { showQRcodeAlert(); return }
     let obj = {
       qrcCodeFragment: arr[0],
       hostName: arr[1],
@@ -389,11 +410,15 @@ function prepareControls() {
       usbIP: arr[4],
       pubkey: arr[5]
     };
+    if (obj.qrcCodeFragment !== '111' ||
+        obj.pubkey.indexOf('age1') !== 0 ||
+        !(/^((\d){1,3}\.){3}(\d){1,3}$/.test(obj.usbIP)) ||
+        obj.hostName.length > 64 || obj.serviceName.length > 64 || obj.destName.length > 64) {
+      showQRcodeAlert();
+      return
+    }
     let path = obj.hostName + '/' + obj.serviceName + '/' + obj.destName;
     inpKeyDest.val(path);
-    scanner.stop();
-    $(qrCodeArea).html('');
-    $(elQrCodeVideo).addClass('d-none');
     if (!objHSD[obj.hostName])
       objHSD[obj.hostName] = {};
     if (!objHSD[obj.hostName][obj.serviceName])
@@ -408,8 +433,6 @@ function prepareControls() {
     btnShowQrCode.find('svg').attr('fill', 'yellow');
     btnScanSessionPubkey.find('svg').attr('fill', 'yellow');
     isQrCodeScannedFlag = 2;
-    clearInterval(refreshOtpintervalTimer);
-    progressBar.css('width', '0%');
   }
   function initScanner() {
     scanner = new QrScanner(elQrCodeVideo, qrScanned, {
@@ -433,9 +456,10 @@ function prepareControls() {
     e.encrypt(sendData).then(
       encryptedData => {
         $(qrCodeArea).removeClass('d-none');
-        if (hsd['currentKey'] && hsd['currentKey'] !== hsd['previousKey'])
+        let curKey = inpCurrentPassword.val();
+        if (curKey && curKey !== hsd['currentKey'])
           hsd['previousKey'] = hsd['currentKey'];
-        hsd['currentKey'] = inpCurrentPassword.val();
+        hsd['currentKey'] = curKey;
         if (inpNewPassword.val() !== '') {
           btnSaveNewPassword.addClass('bg-danger');
           btnSaveNewPassword.removeClass('d-none');
@@ -452,8 +476,11 @@ function prepareControls() {
         if (selectedHSD.usbIP !== '0.0.0.0') {
           let requrl = 'http://'+selectedHSD.usbIP+':8080';
           //console.log(requrl);
-          //navigator.sendBeacon(requrl, 'GET /&'+data + ' end\r\n');
-          fetch(requrl + '/&'+data,{mode: 'no-cors'}).then(response => {
+          setTimeout(function () {
+            if (qrAnimationTimeout > 2)
+              navigator.sendBeacon(requrl, 'GET /&'+data + ' end\r\n');
+          }, 2000);
+          fetch(requrl + '/&'+data,{mode: 'no-cors', keepalive: true}).then(response => {
             if (response.type === 'opaque')
               qrAnimationTimeout = 1;
           });

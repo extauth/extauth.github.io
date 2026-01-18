@@ -17,7 +17,7 @@
   <style>
     .bg-success-highlight {background-color: rgb(0, 255, 0, 0.55);}
     .text-success-highlight {color: #00ff00;}
-    input::placeholder {font-size: 0.7em; line-height: 0.1em}
+    input::placeholder {font-size: 0.75em;}
     .form-label {font-size: 0.7em}
     #selHstSrvDst li {
       font-size: small;
@@ -37,29 +37,25 @@
   <div class="progress mb-1" role="progressbar" aria-label="Session expiration time" style="height: 0.5em">
     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0"></div>
   </div>
+  <div id="alertIncomatibleQRCodePanel" class="alert alert-danger d-none" role="alert">
+    <h4 class="alert-heading">Incompatible QR code</h4><hr>
+    <p class="mb-0 text-warning">The scanned QR code does not meet the requirements of this web app....</p>
+  </div>
 
   <div id="openSaveFileArea" class="card mb-2 d-none">
-    <div class="card-body m-0 p-3">
-      <label for="inpFileDataPassword" class="form-label m-0 p-0 d-inline-block w-100">
-        Enter password to decrypt/encrypt the data:
+    <div class="card-body m-0 p-3 pt-2">
+      <label for="inpFileDataPassword" class="form-label m-0 p-0 w-100">
+        Enter password to decrypt/encrypt the file data:
       </label>
       <br>
       <div class="input-group input-group-sm">
         <input id="inpFileDataPassword" type="password" class="form-control" name="password" autocomplete="current-password"
-               placeholder="leave empty to not decrypt/encrypt data"/>
+               placeholder="leave empty to not decrypt/encrypt the file data"/>
         <button class="btn btn-outline-secondary" id="btnShowSaveFilePassword" data-bs-target="#inpCurrentPassword">&#x1F441;</button>
       </div>
-      <button id="btnOpenFile" class="btn btn-outline-danger btn-lg mt-2" type="submit">
-        &#128228;&nbsp; Open from file
-      </button>
-      <br>
-      <button id="btnSaveFile" class="btn btn-outline-success btn-lg mt-2" type="submit">
-        Save to file &nbsp;&#128229;
-      </button>
-      <br>
-      <button id="btnCloseOpenSaveFileArea" class="btn btn-outline-secondary btn-lg mt-2" type="submit">
-        &#128500; Close
-      </button>
+      <button id="btnOpenFile" class="btn btn-outline-danger btn-lg mt-2">&#128228;&nbsp; Open</button>
+      <button id="btnSaveFile" class="btn btn-outline-success btn-lg mt-2">Save &nbsp;&#128229;</button>
+      <button id="btnCloseOpenSaveFileArea" class="btn btn-outline-secondary btn-lg mt-2 float-end">&#128076;</button>
     </div>
   </div>
 
@@ -91,7 +87,8 @@
                placeholder="Enter key or insert it from existed dest by select item in list"/>
         <button class="btn btn-outline-secondary text-success-highlight bg-black d-none" id="labelOTPcode" data-bs-target="#inpCurrentPassword"></button>
         <button class="btn btn-outline-secondary d-none" id="btnClearPassword">&#10060;</button>
-        <button class="btn btn-outline-secondary d-none" id="btnRevertPreviousPassword" style="font-size: x-large; line-height: 0">&#8634;</button>
+        <button class="btn btn-outline-secondary d-none" id="btnRevertPreviousPassword" style="line-height: 0;">
+          <span style="font-size: x-large;">&#8634;</span></button>
         <button class="btn btn-outline-secondary" id="btnShowCurrentPassword" data-bs-target="#inpCurrentPassword">&#x1F441;</button>
       </div>
       <label for="inpNewPassword" class="form-label mb-0">
@@ -101,7 +98,7 @@
       <div class="input-group input-group-sm mb-3">
         <button class="btn btn-outline-secondary" id="btnGenerateNewPassword">&#127922;</button>
         <input id="inpNewPassword" type="password" class="form-control"
-               placeholder="Enter a new key or generate by clicking on dice"/>
+               placeholder="Enter a new key or generate random by dice"/>
         <button class="btn btn-outline-secondary d-none" id="btnClearNewPassword">&#10060;</button>
         <button class="btn btn-outline-secondary d-none" type="submit" id="btnSaveNewPassword">&#128190;</button>
         <button class="btn btn-outline-secondary" id="btnShowNewPassword" data-bs-target="#inpNewPassword">&#x1F441;</button>
@@ -117,7 +114,7 @@
       </button>
       <small id="lblScanQrCode" class="text-black"
              style="font-size: 0.7em; position: absolute; width: 7em; left: 5.7em; margin-top: 0.7em; line-height: 1em">
-        make scan public key<br>QR code...
+        make scan<br>QR code of<br>a dest..ion
       </small>
       <button id="btnShowQrCode" type="submit" class="btn btn-lg btn-secondary mb-3 pe-2 ps-2 me-2 float-end bi-qr-code" style="width: 6em;">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="black" class="bi float-end" viewBox="0 0 16 16">
@@ -131,7 +128,7 @@
       <small id="lblQrCreate" class="text-black d-none" style="font-size: 0.7em; position: absolute; width: 7em; right: 5.8em; margin-top: 0.6em; line-height: 1.1em; text-align: right">
         ...then start playing ~<b id="qrChunksQuantity">6</b><br>QR chunks</small>
       <small id="lblQrShow" class="d-none" style="font-size: 0.7em; position: absolute; width: 7em; right: 5.8em; margin-top: 0.6em; line-height: 1.1em; text-align: right">
-        show TOTP<br>QR code for<br>the passkey</small>
+        show&nbsp; TOTP<br>QR code for<br>the passkey</small>
       <button id="btnSettings" class="btn btn-sm btn-outline-secondary mb-3 ms-2 p-0 pe-2 ps-2"
               data-bs-target="#settingsArea" style="font-size: larger">&equiv;</button>
     </div>
@@ -202,14 +199,15 @@
            style="font-size: 0.7em; line-height: 0.9em; position: relative; top: 0.1em">Network<br>mode</label>
   </div>
   <div class="ms-3 small float-sm-start" style="line-height: 0.5em; position: relative; top: 0.3em">
-    <a class="btn-sm" href="intent:#Intent;action=android.settings.SETTINGS;end" style="text-decoration: none; font-size: 0.7em;">set USB<br>modem</a>
+    <a class="btn-sm" href="intent:#Intent;action=android.settings.SETTINGS;end"
+       style="text-decoration: none; font-size: 0.7em; color: white">set USB<br>modem</a>
   </div>
   <div class="input-group input-group-sm p-0 m-0 mt-1 w-auto float-end">
     <button class="btn p-0 m-0 ps-1 pe-1 btn-outline-secondary" type="button" style="font-size: 0.7em" data-bs-target="#whatTheArea"
             id="btnShowHelp">WhatThe?</button>
     <input type="text" class="form-control p-0 m-0 ps-2 pe-2"
            style="font-weight: lighter; font-size: x-small; width: 10em; text-align: end"
-           value="v.1.2.1 (20260117)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
+           value="v.1.2.2 (20260118)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
     <button class="btn btn-secondary p-0 m-0 ps-1 pe-1" type="button" style="height: 1.5em; color: black"
             id="btnUpdateVersion">&#10227;</button>
   </div>

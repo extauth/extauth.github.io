@@ -27,7 +27,7 @@ for interface in /sys/class/net/*; do
     ifcn=${interface#/sys/class/net/}
     USBIFCIP=$(ifconfig $ifcn | grep netmask | awk '{print $2}' | tr -d '\n')
     echo "">$TTY
-    echo "USBIFCIP: $USBIFCIP">$TTY
+    echo "USB network interface IP: $USBIFCIP">$TTY
   fi
 done
 
@@ -42,9 +42,6 @@ qrencode -t ANSI256UTF8 "$PUBKEY">$TTY
 echo "Please scan public key qrcode from QR Authentication PWA UI">$TTY
 echo "and now 62 countdown seconds of waiting the passkey via QR codes (or press Ctrl+C)...">$TTY
 
-tmpfifo=/tmp/qrauth.nc.fifo
-rm -f $tmpfifo >$NUL
-mkfifo $tmpfifo || exit 1
 
 QRdataComplete() {
   tmpfn=$(mktemp)
@@ -56,7 +53,9 @@ QRdataComplete() {
   return 0
 }
 
-
+tmpfifo=/tmp/qrauth.nc.fifo
+rm -f $tmpfifo >$NUL
+mkfifo $tmpfifo || exit 1
 (
 cat $tmpfifo | nc -l -p $HTTPPORT | grep --line-buffered GET | \
 while read -r GET >$NUL; do
@@ -81,7 +80,7 @@ TIMEOUT=62
    keyctl unlink $KEYRING_ID >$NUL
  fi
  ZBARPID=`ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}'`
- if [ ! -z $ZBARPID ]; then
+ if [ ! -z "$ZBARPID" ]; then
    kill -9 $ZBARPID >$NUL
  fi
 )&
@@ -92,7 +91,7 @@ terminate() {
   echo "terminate : $1 ">$TTY
   if [ -z "$1" ]; then
     ZBARPID=`ps -Af | grep zbarcam | grep $SELFPID | grep -v grep | awk '{print $2}'`
-    if [ ! -z $ZBARPID ]; then
+    if [ ! -z "$ZBARPID" ]; then
       kill -9 $ZBARPID >$NUL
     fi
     sleep 0.1
