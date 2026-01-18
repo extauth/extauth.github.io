@@ -299,9 +299,9 @@ function prepareControls() {
       btnSaveNewPassword.addClass('d-none');
       btnClearNewPassword.addClass('d-none');
       btnShowQrCode.find('svg').attr('fill', 'black');
-      btnScanSessionPubkey.find('svg').attr('fill', 'white');
       btnKeyDestList.removeClass('btn-outline-success');
     }
+    btnScanSessionPubkey.find('svg').attr('fill', 'white');
     labelOTPcode.addClass('d-none');
     $(qrCodeArea).html('');
     $(qrCodeArea).addClass('d-none');
