@@ -1,7 +1,8 @@
 {
-  "short_name": "qrauth",
+  "short_name": "QRauth",
   "name": "QR Authentication",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "black",
   "theme_color": "black",

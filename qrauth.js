@@ -1,5 +1,6 @@
 let lsHSD = 'hst/svc/dst'; // hostName/serviceName/destinationName
 let lsQrChunksQuantity = 'qrChunksQuantity';
+let lsQrChunkInterval = 'qrChunkInterval';
 let emtyHSdst = {
   currentKey: '',
   previousKey: '',
@@ -28,6 +29,7 @@ function prepareControls() {
   let btnShowCurrentPassword = $('#btnShowCurrentPassword');
   let btnShowNewPassword = $('#btnShowNewPassword');
 
+  let cardArea = $('#cardArea');
   let labelOTPcode = $('#labelOTPcode');
   let inpCurrentPassword = $('#inpCurrentPassword');
   let inpNewPassword = $('#inpNewPassword');
@@ -234,6 +236,7 @@ function prepareControls() {
   }
   btnShowCurrentPassword.click(showInputPassword);
   btnShowNewPassword.click(showInputPassword);
+  $('#btnShowSaveFilePassword').click(showInputPassword);
   labelOTPcode.click(function () {
     event.preventDefault();
     TOTP6.generateSecretKey(inpCurrentPassword.val(), showInputPassword)
@@ -265,7 +268,7 @@ function prepareControls() {
     currentOTPsecret = OTPsecret ? OTPsecret : currentOTPsecret;
     let qrc = await TOTP6.genCode(currentOTPsecret);
     $(qrCodeArea).html('');
-    let w = $('#cardArea').width();
+    let w = cardArea.width();
     new QRCode(qrCodeArea, {
       text: qrc,
       width: w-40,
@@ -541,7 +544,7 @@ function prepareControls() {
             preventDoubleClick = false;
           } else
           progressBar.css('width', Math.floor(qrAnimationTimeout/180*100) +'%');
-        },250);
+        },parseInt(localStorage[lsQrChunkInterval]));
       });
   }
   $(qrCodeArea).click(function () {
@@ -594,7 +597,7 @@ function prepareControls() {
     if (event) event.preventDefault();
     let addsub = $(this).attr('data-bs-target') === '+' ? +1 : -1;
     let newval = parseInt(localStorage[lsQrChunksQuantity]) + addsub;
-    if (newval > 1 && newval <= 62) {
+    if (newval >= 1 && newval <= 62) {
       inpQrChunksRange.val(newval);
       localStorage[lsQrChunksQuantity] = newval;
       qrChunksQuantity.html(localStorage[lsQrChunksQuantity]);
@@ -609,6 +612,32 @@ function prepareControls() {
     lblQrChunksNumber.html(localStorage[lsQrChunksQuantity]);
   });
 
+  let btnQrChunkIntervalPlus = $('#btnQrChunkIntervalPlus');
+  let btnQrChunkIntervalMinus = $('#btnQrChunkIntervalMinus');
+  let lblQrChunkInterval = $('#lblQrChunkInterval');
+  let inpQrChunkInterval = $('#inpQrChunkInterval');
+  if (!localStorage[lsQrChunkInterval])
+    localStorage[lsQrChunkInterval] = 250;
+  lblQrChunkInterval.html(localStorage[lsQrChunkInterval]);
+  function changeQrIntervalChunks() {
+    if (event) event.preventDefault();
+    let addsub = $(this).attr('data-bs-target') === '+' ? +50 : -50;
+    let newval = parseInt(localStorage[lsQrChunkInterval]) + addsub;
+    if (newval >= 50 && newval <= 950) {
+      inpQrChunkInterval.val(newval);
+      localStorage[lsQrChunkInterval] = newval;
+      lblQrChunkInterval.html(localStorage[lsQrChunkInterval]);
+    }
+  }
+  btnQrChunkIntervalPlus.click(changeQrIntervalChunks);
+  btnQrChunkIntervalMinus.click(changeQrIntervalChunks);
+  inpQrChunkInterval.on('input', function () {
+    localStorage[lsQrChunkInterval] = $(this).val();
+    lblQrChunkInterval.html(localStorage[lsQrChunkInterval]);
+  });
+
+
+
   btnScanSessionPubkey.click(scanQRcode);
   lblScanQrCode.click(scanQRcode);
   $('#btnScanSessionPubkey4pwd').click(scanQRcode);
@@ -620,6 +649,7 @@ function prepareControls() {
     var isHidden = !tgtEl.hasClass('d-none');
     the[ isHidden ? 'removeClass' : 'addClass' ]('bg-primary');
     tgtEl[ isHidden ? 'addClass' : 'removeClass' ]('d-none');
+    //cardArea[ !isHidden ? 'addClass' : 'removeClass' ]('d-none');
   }
   btnSettings.click(showHideArea);
   btnShowHelp.click(showHideArea);

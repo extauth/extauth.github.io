@@ -17,7 +17,7 @@
   <style>
     .bg-success-highlight {background-color: rgb(0, 255, 0, 0.55);}
     .text-success-highlight {color: #00ff00;}
-    input::placeholder {font-size: 0.75em;}
+    input::placeholder {font-size: 0.75em; position: relative; top: -1px}
     .form-label {font-size: 0.7em}
     #selHstSrvDst li {
       font-size: small;
@@ -51,7 +51,7 @@
       <div class="input-group input-group-sm">
         <input id="inpFileDataPassword" type="password" class="form-control" name="password" autocomplete="current-password"
                placeholder="leave empty to not decrypt/encrypt the file data"/>
-        <button class="btn btn-outline-secondary" id="btnShowSaveFilePassword" data-bs-target="#inpCurrentPassword">&#x1F441;</button>
+        <button class="btn btn-outline-secondary" id="btnShowSaveFilePassword" data-bs-target="#inpFileDataPassword">&#x1F441;</button>
       </div>
       <button id="btnOpenFile" class="btn btn-outline-danger btn-lg mt-2">&#128228;&nbsp; Open</button>
       <button id="btnSaveFile" class="btn btn-outline-success btn-lg mt-2">Save &nbsp;&#128229;</button>
@@ -84,7 +84,7 @@
       <br>
       <div class="input-group input-group-sm">
         <input id="inpCurrentPassword" type="password" class="form-control" name="password" autocomplete="current-password"
-               placeholder="Enter key or insert it from existed dest by select item in list"/>
+               placeholder="Enter key or insert it from existed dest..ion in the list"/>
         <button class="btn btn-outline-secondary text-success-highlight bg-black d-none" id="labelOTPcode" data-bs-target="#inpCurrentPassword"></button>
         <button class="btn btn-outline-secondary d-none" id="btnClearPassword">&#10060;</button>
         <button class="btn btn-outline-secondary d-none" id="btnRevertPreviousPassword" style="line-height: 0;">
@@ -165,14 +165,14 @@
           </div>
         </div>
         <div class="row">
-          <label for="inpQrChunkTime" class="form-label mb-0 mt-2" style="font-size: 0.7em">
-            Display time per QR part: <b id="lblQrChunkTime">250 ms</b>
+          <label for="inpQrChunkInterval" class="form-label mb-0 mt-2" style="font-size: 0.7em">
+            Display time per QR part: <b id="lblQrChunkInterval">250 ms</b>
             <span class="float-end me-5 pe-4">[50..950/50]</span>
           </label>
           <div class="d-flex">
-            <input id="inpQrChunkTime" type="range" class="form-range me-2" min="50" max="1000" step="50" value="250" disabled>
-            <button id="btnQrChunkTimeMinus" class="btn btn-sm btn-primary m-0 me-2 pb-0 pt-0 pe-2 ps-2" data-bs-target="-">&minus;</button>
-            <button id="btnQrChunkTimePlus" class="btn btn-sm btn-primary m-0 pb-0 pt-0 pe-2 ps-2" data-bs-target="+">&plus;</button>
+            <input id="inpQrChunkInterval" type="range" class="form-range me-2" min="50" max="950" step="50" value="250">
+            <button id="btnQrChunkIntervalMinus" class="btn btn-sm btn-primary m-0 me-2 pb-0 pt-0 pe-2 ps-2" data-bs-target="-">&minus;</button>
+            <button id="btnQrChunkIntervalPlus" class="btn btn-sm btn-primary m-0 pb-0 pt-0 pe-2 ps-2" data-bs-target="+">&plus;</button>
           </div>
         </div>
         <div class="row mt-3 ms-0">
@@ -207,7 +207,7 @@
             id="btnShowHelp">WhatThe?</button>
     <input type="text" class="form-control p-0 m-0 ps-2 pe-2"
            style="font-weight: lighter; font-size: x-small; width: 10em; text-align: end"
-           value="v.1.2.2 (20260118)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
+           value="v.1.2.3 (20260118)" id="labelVersion" aria-describedby="btnUpdateVersion" aria-label="version">
     <button class="btn btn-secondary p-0 m-0 ps-1 pe-1" type="button" style="height: 1.5em; color: black"
             id="btnUpdateVersion">&#10227;</button>
   </div>
