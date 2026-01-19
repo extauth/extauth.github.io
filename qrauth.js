@@ -354,7 +354,7 @@ function prepareControls() {
       let pass = inpCurrentPassword.val();
       btnShowQrCode.find('svg').attr('fill', 'gray');
       labelOTPcode.removeClass('d-none');
-      TOTP6.generateSecretKey(pass, refreshOtp);
+      //TOTP6.generateSecretKey(pass, refreshOtp);
     } else
       stopShowQRcode();
   }
@@ -444,6 +444,7 @@ function prepareControls() {
       }
     );
   }
+  let unlockedIcon = $('#unlockedIcon');
   let qrAnimationTimeout = 0;
   function showAnimatedQRcode() {
     let w = $('#mainContainer').width();
@@ -483,9 +484,12 @@ function prepareControls() {
             if (qrAnimationTimeout > 2)
               navigator.sendBeacon(requrl, 'GET /&'+data + ' end\r\n');
           }, 2000);
-          fetch(requrl + '/&'+data,{mode: 'no-cors', keepalive: true}).then(response => {
-            if (response.type === 'opaque')
+          fetch(requrl + '/&'+data,{mode: 'no-cors'}).then(response => {
+            if (response.type === 'opaque') {
+              unlockedIcon.removeClass('d-none');
+              setTimeout(function () {unlockedIcon.addClass('d-none');}, 3000);
               qrAnimationTimeout = 1;
+            }
           });
         }
         let datalen = data.length;
