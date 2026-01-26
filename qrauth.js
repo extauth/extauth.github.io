@@ -1,4 +1,4 @@
-let version = 'v.1.3.4';
+let version = 'v.1.3.5';
 let lsHSD = 'hst/svc/dst'; // hostName/serviceName/destinationName
 let lsQrChunksQuantity = 'qrChunksQuantity';
 let lsQrChunkInterval = 'qrChunkInterval';
