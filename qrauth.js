@@ -52,7 +52,7 @@ function prepareControls() {
   let whatTheArea = $('#whatTheArea');
   let switcherPTPMode = $('#switcherPTPMode');
   let hsdHtmlTemplate = '<li id="#id"><a class="dropdown-item" href="#">#html</a></li>';
-  let hsdHtmlTemplateBtn = '<button id="#id" class="dropdown-item btn-sm btn-outline-primary">#html</button>';
+  let hsdHtmlTemplateBtn = '<button id="#id" class="dropdown-item btn-sm btn-outline-primary" data-bs-target="#openSaveFileArea">#html</button>';
 
   selHSD.html('');
   let isHSDnotEmpty = false;
