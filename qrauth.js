@@ -272,7 +272,6 @@ function prepareControls() {
     currentOTPsecret = OTPsecret ? OTPsecret : currentOTPsecret;
     let qrc = await TOTP6.genCode(currentOTPsecret);
     $(qrCodeArea).html('');
-    $(qrCodeArea).removeClass('bg-black');
     let w = cardArea.width();
     new QRCode(qrCodeArea, {
       text: qrc,
@@ -327,6 +326,7 @@ function prepareControls() {
     if (preventDoubleClick)
       return;
     preventDoubleClick = true;
+    $(qrCodeArea).removeClass('bg-black');
     settingsArea.addClass('d-none');
     btnSettings.removeClass('bg-primary');
     whatTheArea.addClass('d-none');
