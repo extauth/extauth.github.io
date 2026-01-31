@@ -147,6 +147,7 @@ QRdataComplete() {
   return 0
 }
 
+if [ "$USBIFCIP" != "0.0.0.0" ]; then
 {
 cat $httpfifo | nc -l -p $HTTPPORT | grep --line-buffered GET | \
 while read -r GET; do
@@ -162,6 +163,7 @@ done
 echo ".">$zbarfifo
 } &
 FIFOPID=$!
+fi
 
 zbarcam -q --nodisplay --nodbus --raw -Sdisable -Sqrcode.enable >$zbarfifo 2>$TTY &
 ZBARPID=$!
@@ -190,13 +192,16 @@ TIMEOUTPID=$!
 
 ISVIDEODEV=`ls /dev/video* 2>$NUL`
 if [ -z "$ISVIDEODEV" ]; then
-  if [ "$USBIFCIP" == "0.0.0.0" ]; then
-    echo "No webcam found. Please enable USB modem on opened PWA device and start this again..." >$TTY
-    sleep 1
+  echo -e "\n###\n###">$TTY
+  echo "### No video camera found!" >$TTY
+  echo "###">$TTY
+  if [ "$USBIFCIP" == "0.0.0.0" -a $ISPTPMODE -eq 0 ]; then
+    echo "### Please enable USB modem or PTP mode on PWA device and try again." >$TTY
+    echo "### (press Ctrl+Alt+Delete for reboot)" >$TTY
+    echo -e "###\n###\n">$TTY
     terminate 2>$NUL 1>$NUL
+    exit 1
   fi
-  echo "### No camera found! Only USB modem or PTP modes is possible..." >$TTY
-#  cat $zbarfifo >$NUL
 fi
 LEN=0
 CNTR=""
@@ -262,5 +267,5 @@ rm $qrdatafn
 terminate 2>$NUL 1>$NUL
 fi
 
-terminate ~ 2>$NUL 1>$NUL
+terminate ~ 2>$NUL 1>$NUL &
 exit 0
