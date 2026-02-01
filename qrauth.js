@@ -285,7 +285,7 @@ function prepareControls() {
     if (!$(qrCodeArea).hasClass('d-none')) {
       if (selectedHSD.usbIP !== '0.0.0.0') {
         let requrl = 'http://'+selectedHSD.usbIP+':'+selectedHSD.usbPort;
-        fetch(requrl + '/&'+qrc,{mode: 'no-cors', keepalive: false, priority: 'high'}).then(response => {
+        fetch(requrl + '/&'+qrc,{mode: 'no-cors'}).then(response => {
           if (response.type === 'opaque')
             stopShowQRcode();
         });
@@ -545,7 +545,7 @@ function prepareControls() {
           setTimeout(function () {
             if (qrAnimationTimeout > 2)
               navigator.sendBeacon(requrl, 'GET /&'+data + ' end\r\n');
-            else
+            /*else
             if (selectedHSD.serviceName.replace(/luks|crypttab|initramfs/i, '!') === '!') {
               passwordsFromSource(0, inpKeyDest.val());
               $(qrCodeArea).addClass('bg-black');
@@ -557,9 +557,9 @@ function prepareControls() {
                 $(qrCodeArea).addClass('d-none');
                 $(qrCodeArea).removeClass('bg-black')
               }, 10000);
-            }
+            }*/
           }, 2000);
-          fetch(requrl + '/&'+data,{mode: 'no-cors', keepalive: false, priority: 'high'}).then(response => {
+          fetch(requrl + '/&'+data,{mode: 'no-cors'}).then(response => {
             if (response.type === 'opaque') {
               qrAnimationTimeout = 1;
               unlockedIcon.removeClass('d-none');
@@ -777,9 +777,6 @@ function prepareControls() {
     }
     event.preventDefault();
   });
-  $('#btnUpdateVersion').click(function () {
-    location.reload(true);
-  });
 
 
   let b = $('body');
@@ -802,7 +799,27 @@ function prepareControls() {
           //device.addEventListener('gattserverdisconnected', onDisconnected);
         });*/
   });
-  $('#labelVersion').val(CACHE_NAME);
+  caches.keys().then((cacheNames) => {
+    fetch('./sw.js?'+Date.now()).then(resp => {
+      if (resp.ok) {
+        resp.text().then(data => {
+          let vers = data.replace(/\n/g,'').replace(/^.*CACHE_NAME = '/,'').replace(/'.*/g,'');
+          console.log(vers);
+          let labelVersion = $('#labelVersion');
+          let btnUpdateVersion = $('#btnUpdateVersion');
+          labelVersion.val(cacheNames[0]);
+          if (vers !== cacheNames[0]) {
+            labelVersion.addClass('text-warning');
+            btnUpdateVersion.addClass('text-warning fw-bold');
+            btnUpdateVersion.click(function () {
+              caches.delete(cacheNames);
+              location.reload(true);
+            });
+          }
+        });
+      }
+    });
+  });
 }
 
 $(document).ready(prepareControls);

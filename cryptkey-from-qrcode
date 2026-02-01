@@ -42,30 +42,24 @@ echo -e "\n$LINE\n$LINE\n$LINE\n">$TTY
 read -t 15 -r cont >$NUL
 
 USBIFCIP="0.0.0.0"
+#tcpdump -Z root -nAvv -i any 2>>/tmp/tcpdump.log >>/tmp/tcpdump.log &
+#TCPDUMPID=$!
+#ifcn=""
 # this may be will wifi and bt channels to take passwrods, but it still unstable and have some unresolved issues...
 for interface in /sys/class/net/*; do
   ifc=$(readlink "$interface")
   if [[ "$ifc" == */usb* ]] >$TTY; then
     ifcn=${interface#/sys/class/net/}
-    ip link set $ifcn up >$NUL
+    ip link set $ifcn up 2>$NUL 1>$NUL
     dhcpcd -1 $ifcn 2>$NUL 1>$NUL
     USBIFCIP=`ip -4 addr show $ifcn | awk '/inet / {print $2}' | cut -d/ -f1`
     if [ -z "$USBIFCIP" ]; then
       USBIFCIP="0.0.0.0"
     else
       echo "USB network interface IP: $USBIFCIP">$TTY
-#      ip route add "$(echo "$USBIFCIP" | cut -d. -f1-3).0/24" dev "$ifcn" 2>$NUL >$TTY
-#      sleep 1
 #      GWIP=`ip route show | grep default | grep $ifcn | awk '{print $3}'`
-#      arping -U -I $ifcn -c 2 $USBIFCIP 2>$TTY >$TTY
-#      arping -U -I $ifcn -c 2 $GWIP 2>$TTY >$TTY
-#      ping -c 2 -W 1 $GWIP 2>$TTY >$TTY
-#      echo -e "NOTIFY * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nNT: upnp:rootdevice\r\nNTS: sspd:alive\r\n\r\n" | nc -u -b -w 1 255.255.255.255 1900
-#      echo "qrauth" | nc -u -b -w 1 224.0.0.251 5353
     fi
     break
-#    echo "">$TTY
-#    echo "USB network interface IP: $USBIFCIP">$TTY
   fi
 done
 
@@ -190,17 +184,17 @@ QRdataComplete() {
 
 if [ "$USBIFCIP" != "0.0.0.0" ]; then
 {
-cat $httpfifo | nc -l -p $HTTPPORT | grep GET | \
+cat $httpfifo | nc -l -s $USBIFCIP -p $HTTPPORT | \
 while read -r GET >$NUL; do
-  echo "GET: $GET">$TTY
-  if [ "$GET" == "." ]; then
-    break
-  fi
-  data=${GET##*&}
-  QRDATA=${data% *}
-  echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: *\r\n\r\nOK" >$httpfifo
-  QRdataComplete $QRDATA
-  break
+ case "$GET" in
+  "GET /&"*)
+   data=${GET##*&}
+   QRDATA=${data% *}
+   echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: *\r\n\r\nOK" >$httpfifo
+   QRdataComplete $QRDATA
+   break
+   ;;
+ esac
 done
 echo ".">$zbarfifo
 } &
@@ -308,6 +302,9 @@ rm -f $zbarfifo >$NUL
 
 kill -9 $ZBARPID 2>$NUL 1>$NUL
 wait $ZBARPID 2>$NUL 1>$NUL
+
+#kill -9 $TCPDUMPID 2>$NUL 1>$NUL
+#wait $TCPDUMPID 2>$NUL 1>$NUL
 
 
 LUKSKEY=$(keyctl pipe $KEYRING_ID)

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'v.1.3.8';
+const CACHE_NAME = 'v.1.3.9';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -30,16 +30,6 @@ self.addEventListener('activate', (event) => {
                 return caches.delete(cacheName);
             })
         );
-      }).then(() => clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-if (event.request.url.startsWith('http://10.'))
-    return;
-  event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || fetch(event.request);
-      })
+      }).then(() => self.clients.claim())
   );
 });

@@ -104,7 +104,7 @@ terminate() {
   fi
   touch $TERMFLAG
 
-  NCPID=`ps -Af | egrep "nc -l -p $HTTPPORT" | grep -v grep | awk '{print $2}'`
+  NCPID=`ps -Af | grep nc | grep "$HTTPPORT" | grep -v grep | awk '{print $2}'`
   if [ ! -z "$NCPID" ]; then
     kill -9 $NCPID 2>$NUL 1>$NUL
     wait $NCPID 2>$NUL 1>$NUL
@@ -149,16 +149,17 @@ QRdataComplete() {
 
 if [ "$USBIFCIP" != "0.0.0.0" ]; then
 {
-cat $httpfifo | nc -l -p $HTTPPORT | grep --line-buffered GET | \
+cat $httpfifo | nc -l -s $USBIFCIP -p $HTTPPORT | \
 while read -r GET; do
-  if [ "$GET" == "." ]; then
-    break
-  fi
-  data=${GET##*&}
-  QRDATA=${data% *}
-  echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: *\r\n\r\nOK" >$httpfifo
-  QRdataComplete $QRDATA
-  break
+ case "$GET" in
+  "GET /&"*)
+   data=${GET##*&}
+   QRDATA=${data% *}
+   echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: *\r\n\r\nOK" >$http
+   QRdataComplete $QRDATA
+   break
+   ;;
+ esac
 done
 echo ".">$zbarfifo
 } &
