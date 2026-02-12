@@ -113,15 +113,36 @@ function prepareControls() {
     if (selectedHSD)
       btnClearKeyDestination.removeClass('d-none');
   });
-  inpKeyDest.blur(function () {
-    btnClearKeyDestination.addClass('bg-danger');
+  function hideClearDestButton() {
     setTimeout(function () {
-      btnClearKeyDestination.addClass('d-none');
-      btnClearKeyDestination.removeClass('bg-danger');
+      if (tripleClick !== 3)
+        return;
+      btnClearKeyDestination.addClass('bg-danger');
+      setTimeout(function () {
+        btnClearKeyDestination.addClass('d-none');
+        btnClearKeyDestination.removeClass('bg-danger');
+      },250);
     },250);
-  });
+  }
+  inpKeyDest.blur(hideClearDestButton);
+
+  let tripleClickTimer = 0;
+  let tripleClick = 3;
+  let lbl3ClickDeleteDestination = $('#lbl3ClickDeleteDestination');
   btnClearKeyDestination.click(function () {
     event.preventDefault();
+    lbl3ClickDeleteDestination.html((3-(--tripleClick)).toString()+'/3');
+    if (tripleClick > 0) {
+      lbl3ClickDeleteDestination.removeClass('d-none');
+      if (tripleClickTimer) clearTimeout(tripleClickTimer);
+      tripleClickTimer = setTimeout(function () {
+        lbl3ClickDeleteDestination.addClass('d-none');
+        tripleClick = 3;
+        hideClearDestButton();
+      }, 2000);
+      return false;
+    }
+    btnClearKeyDestination.addClass('d-none');
     let tgt = inpKeyDest.val().replaceAll('/','');
     for (let hst in objHSD)
       for (let svc in objHSD[hst])
@@ -341,7 +362,7 @@ function prepareControls() {
       btnClearNewPassword.addClass('d-none');
       btnKeyDestList.removeClass('btn-outline-success');
       btnAutoGenerateNewPassword.removeClass('text-success-highlight');
-      btnGenerateNewPasswor.removeClass('bg-success-highlight');
+      btnGenerateNewPassword.removeClass('bg-success-highlight');
     }
     btnShowQrCode.find('svg').attr('fill', 'black');
     btnScanSessionPubkey.find('svg').attr('fill', 'white');
@@ -846,8 +867,19 @@ function prepareControls() {
     inpNewPassword.val(currPass);
     $('#lblNewPasswordsLength').html('(' + currPass.length + ' chars)');
   });
+  let lbl3ClickDeleteNewPassword = $('#lbl3ClickDeleteNewPassword');
   btnClearNewPassword.click(function () {
     event.preventDefault();
+    lbl3ClickDeleteNewPassword.html((3-(--tripleClick)).toString()+'/3');
+    if (tripleClick > 0) {
+      lbl3ClickDeleteNewPassword.removeClass('d-none');
+      if (tripleClickTimer) clearTimeout(tripleClickTimer);
+      tripleClickTimer = setTimeout(function () {
+        lbl3ClickDeleteNewPassword.addClass('d-none');
+        tripleClick = 3;
+      }, 2000);
+      return false;
+    }
     $('#inpNewPassword').val('');
     delete selectedHSD.applyNewKey;
     localStorage[lsHSD] = JSON.stringify(objHSD);
@@ -856,6 +888,8 @@ function prepareControls() {
     btnClearNewPassword.addClass('d-none');
     $('#lblNewPasswordsLength').html('');
     unlockButtonSaveNewPassword = false;
+    lbl3ClickDeleteDestination.addClass('d-none');
+    tripleClick = 3;
   });
   btnSaveNewPassword.click(async function () {
     event.preventDefault();

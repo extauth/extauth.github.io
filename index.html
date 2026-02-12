@@ -169,6 +169,7 @@
       <label for="inpKeyDestination" class="form-label m-0 p-0 ps-4 ms-3">
         &nbsp;Destination (obtain from a scanned QR code)
       </label>
+      <span id="lbl3ClickDeleteDestination" class="float-end d-none" style="font-size: small; color: red;">click 1/3</span>
       <br>
       <div class="input-group input-group-sm ps-4 ms-3" role="group">
         <input id="inpKeyDestination" type="text" class="form-control ps-2 pe-2" name="username" autocomplete="username"
@@ -191,7 +192,7 @@
           &#128203;<span class="text-warning" style="position: absolute; left: 1em;">&#10148;</span>
         </button>
         <input id="inpCurrentPassword" type="password" class="form-control" name="password" autocomplete="current-password"
-               placeholder="Enter key or insert it from existed dest..ion in the list"/>
+               placeholder="Enter key or insert it from clipboard (left button)"/>
         <button class="btn btn-outline-secondary" id="btnCopyToClipboard" style="padding: 0.1em 0.2em 0.1em 0.2em !important;">
           <span class="text-danger" style="position: absolute; left: -0.2em;">&#10148;</span>&#128203;
         </button>
@@ -215,13 +216,14 @@
         Change the current passkey to a new <i id="lblNewPasswordsLength"></i>
         <br>
       </label>
+      <span id="lbl3ClickDeleteNewPassword" class="float-end d-none" style="font-size: small; color: red;">click 1/3</span>
       <div class="input-group input-group-sm">
         <button class="btn btn-outline-secondary" id="btnAutoGenerateNewPassword"><span>&check;</span></button>
         <button class="btn btn-outline-secondary" id="btnGenerateNewPassword">&#127922;</button>
         <input id="inpNewPassword" type="password" class="form-control"
                placeholder="Enter a new key or generate random by dice"/>
         <button class="btn btn-outline-secondary d-none" id="btnClearNewPassword">&#10060;</button>
-        <button class="btn btn-outline-secondary d-none" type="submit" id="btnSaveNewPassword">&#128190;</button>
+        <button class="btn btn-outline-secondary d-none" type="submit" id="btnSaveNewPassword">&nbsp; &#128190; &nbsp;</button>
         <button class="btn btn-outline-secondary" id="btnShowNewPassword" data-bs-target="#inpNewPassword">&#x1F441;</button>
       </div>
       </div>
