@@ -1,21 +1,21 @@
-🔑 QR-Auth: Keyboardless LUKS Authorization via PWA
+🔑 External authentication: Keyboardless LUKS(crypttab) or terminal(sudo) authorization via PWA from smartphone by QR codes ( and USB modem or PTP mode)
 
-[still developing yet, but working already(only webcam mode), usb-modem not stable yet]
+!!! Please only use LUKS(crypttab) QR authentication if you know and understand how to recover your kernel boot in case of problems.
 
 A secure, keyboard-free authentication framework for Linux systems(ubuntu tested only), designed to eliminate the threat of hardware and visual keyloggers.
 To test this system:
 1. open the website [QRauth](https://alpxit.github.io/qrauth/) on your smartphone (you can install it as a web app to use it offline),
-2. run one of commands below in linux console:
+2. download qrauth shell script (+install requirements) then run it in linux console:
 ```sh
 qrauth               # to change password
-qrauth && sudo -i    # to open root and change password
+qrauth && sudo -i    # to open root (can change password at once)
 ```
 
-3. then start scanning on the app page,
-4. scan the QR code from the console, 
-5. click the "Show QR code" button, 
-6. and show it to the camera of the device on which you ran the script...
-!! Please only use LUKS QR authentication if you know and understand how to recover your kernel boot in case of problems!!
+3. click scanning button in the app page,
+4. scan the QR code from the console,
+5. enter password key of your account 
+6. click second button to show QR code, 
+7. and show it to the camera of the device on which you ran the script...
 
 💡 The Concept
 
@@ -38,11 +38,11 @@ The system uses a smartphone as a trusted security token to deliver encrypted cr
 4. Encrypt & Respond: The PWA encrypts the passphrase with the machine's Public Key (using the age encryption protocol).
 5. Data Transfer: The encrypted payload is converted into a sequence of dynamic QR codes displayed on the smartphone screen.
 6. Unlock: The machine's camera captures the sequence, decrypts the payload with its Private Key, and passes the valid passphrase to cryptsetup.
-Note: The protocol supports automatic passphrase rotation, allowing the LUKS key to be changed after every successful login for maximum security.
+   Note: The current pass key can be changed in any session.
 
 🛡 Security Highlights
 
-- Anti-Keylogger: Physical keystroke interception is impossible as no data is entered via the keyboard.
+- Anti-Keylogger: Physical keystroke interception is impossible as no data is entered via the keyboard or other data channel.
 - Asymmetric Encryption: Credentials are never transmitted in plain text; only encrypted payloads are exchanged.
 - Offline Independence: The PWA is fully autonomous and does not require an internet connection, making it suitable for air-gapped or secure environments.
 
@@ -50,11 +50,9 @@ Note: The protocol supports automatic passphrase rotation, allowing the LUKS key
 
 The project aims to become a multi-modal authentication standard.
 Future updates will introduce additional transport channels while maintaining the core encryption protocol:
-+ QR Codes (Visual Channel)
-- USB (Direct smartphone-to-PC connection)
-- Bluetooth Low Energy (BLE)
 - Wi-Fi / Local Network
-- Audio (Ultrasonic data transmission via mic/speakers)
+- Bluetooth Low Energy (BLE)
+- Audio ("Ultrasonic" data transmission via mic/speakers)
 
 📺 Demo
 
