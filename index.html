@@ -119,6 +119,7 @@
       top: -0.7em;
     }
     #btnSettings {
+      top: 0.2em;
       font-size: 1em;
       height: 1.4em;
       padding: 0.2em 0.1em !important;
@@ -235,7 +236,7 @@
   <form action="#" method="post">
   <div id="cardArea" class="card">
     <div class="card-body m-0 p-0 ms-2 me-2">
-      <label for="inpKeyDestination" class="form-label m-0 p-0">
+      <label for="inpKeyDestination" class="form-label m-0 p-0 mt-2">
         &nbsp;Destination (obtain from a scanned QR code)
       </label>
       <button id="labelVersion" class="btn btn-outline m-0 p-0 position-absolute float-end"
@@ -260,7 +261,7 @@
           </svg>
         </button>
       </div>
-      <label for="inpCurrentPassword" class="form-label m-0 p-0">
+      <label for="inpCurrentPassword" class="form-label m-0 p-0  mt-2">
         The current passkey for the destination
       </label>
       <span id="lbl3ClickDeletePrevPassword" class="d-none">click 1/3</span>
@@ -291,7 +292,7 @@
       </button>
 
       <div id="areaNewPassword" class="float-start" style="width: 15.8em !important;">
-      <label for="inpNewPassword" class="form-label mb-0">
+      <label for="inpNewPassword" class="form-label mb-0 mt-2">
         Update the passkey to a new if need <i id="lblNewPasswordsLength"></i>
         <br>
       </label>
@@ -312,7 +313,7 @@
       <small id="lblQrCreate" class="text-black d-none">then start playing <b id="qrChunksQuantity">6</b> QR<br>code parts</small>
       <small id="lblQrShow" class="text-success d-none">show TOTP<br>QR code for &nbsp;<br>the session</small>
     </div>
-    <div class="progress mt-1" role="progressbar" aria-label="Session expiration time" style="height: 0.3em; margin: 0 0.2em">
+    <div class="progress mt-2" role="progressbar" aria-label="Session expiration time" style="height: 0.3em; margin: 0 0.2em">
       <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0"></div>
     </div>
   </div>
@@ -332,10 +333,8 @@
               <p class="mb-2 fw-bold text-success" style="font-size: 1.15em;">
                 Keyboardless Security Infrastructure
               </p>
-
-              This system provides secure, hardware-isolated terminal and partition authorization via mobile PWA, eliminating manual passphrase entry.<br>
-
-              <div class="mt-3 bg-dark p-2 rounded border border-secondary">
+              This system provides secure, hardware-isolated terminal and partition authorization via mobile PWA, eliminating manual passphrase entry.
+              <div class="mt-2 bg-dark p-2 rounded border border-secondary">
                 <span class="text-warning fw-bold d-block mb-1">🔑 Supported Core Integrations:</span>
                 <ul class="list-unstyled m-0 ps-1 text-secondary" style="line-height: 1.5;">
                   <li>• <strong class="text-light">LUKS & Crypttab</strong> — Pre-boot full disk decryption</li>
@@ -350,6 +349,8 @@
                   Primary authentication runs via dynamic <strong class="text-light">QR codes</strong>. Backup channels support secure <strong class="text-light">USB PTP-mode</strong> file exchange and acoustic <strong class="text-light">Audio-modem</strong> trills.
                 </div>
               </div>
+              <br>
+              <a target="_blank" href="https://github.com/extauth/extauth.github.io">The project GitHub page...</a>
 
             </div>
           </div>
@@ -719,12 +720,12 @@
   <div id="unlockedIcon" class="m-0 d-none" style="font-size: 10em; text-align: center">&#128275;</div>
 </div>
 
-  <div id="toolContainer" class="m-0 p-1 pt-0" style="padding-top: 0.1em !important; height: 1.8em;">
-    <div class="form-check form-switch mt-1 ms-0 float-start" style="font-size: 0.8em; position: relative; top: -0.3em; padding-left: 1.8em; left: 0.8em; height: 1.2em; width: 2em;">
+  <div id="toolContainer" class="m-0 p-1 pt-1 ps-2" style="height: 1.8em;">
+    <div class="form-check form-switch mt-1 ms-0 float-start" style="font-size: 0.8em; position: relative; top: -0.3em; padding-left: 1.8em; left: 1em; height: 1.2em; width: 2em;">
       <input class="form-check-input bg-success border-success-subtle d-none" type="checkbox" role="switch" id="switcherOptionsShow" style="width: 1.3em !important;" checked>
-      <label id="lblSwitcherOptions" class="form-check-label ms-0 opacity-25" style="font-size: 1.8em; position: relative; left: -1.5em; top: -0.4em;" for="switcherOptionsShow">&#8997;</label>
+      <label id="lblSwitcherOptions" class="form-check-label ms-0 opacity-25" style="font-size: 2em; position: relative; left: -1.4em; top: -0.34em;" for="switcherOptionsShow">&#8997;</label>
     </div>
-    <div class="behidden form-check form-switch mt-1 ms-1 float-start" style="font-size: 0.8em; position: relative; top: -0.2em;">
+    <div class="behidden form-check form-switch mt-1 ms-2 float-start" style="font-size: 0.8em; position: relative; top: -0.2em;">
       <input class="form-check-input" type="checkbox" role="switch" id="switcherAudioMode" disabled>
       <label class="form-check-label ms-0" style="font-size: 1.2em; position: relative; left: -0.5em; top: -0.2em; filter: grayscale(100%);" for="switcherAudioMode">🔊</label>
     </div>
@@ -740,7 +741,7 @@
        href="intent:#Intent;action=android.settings.SETTINGS;end">set USB<br>modem</a>
     <button id="btnUpdateVersion" type="button" class="btn btn-outline-secondary ms-2 text-warning fw-bold float-end d-none"><span>&#10227;</span></button>
     <button id="btnShowHelp" class="btn p-0 m-0 btn-outline float-end" type="button" data-bs-target="#whatTheArea"
-            style="font-size: 1.4em; opacity: 0.9; filter: grayscale(100%); position: relative; top: -0.28em; height: 1.4em; left: 0.1em;">&#128214;</button>
+            style="font-size: 1.4em; opacity: 0.9; filter: grayscale(100%); position: relative; top: -0.28em; height: 1.4em;">&#128214;</button>
   </div>
 
 <div id="areaScanButton" class="container position-relative">
